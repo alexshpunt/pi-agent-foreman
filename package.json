@@ -1,6 +1,6 @@
 {
   "name": "pi-agent-foreman",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Send Pi agents back to work when they stop before the job is done.",
   "type": "module",
   "license": "MIT",
