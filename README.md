@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/foreman.png" alt="Agent Foreman" width="720">
+  <img src="assets/foreman.webp" alt="Agent Foreman" width="720">
 </p>
 
 <h1 align="center">Pi Agent Foreman</h1>
