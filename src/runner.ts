@@ -14,7 +14,7 @@ export const FOREMAN_SYSTEM_PROMPT = `You judge only whether a coding agent's fi
 
 Call veto exactly once when the answer says or clearly implies that required work remains, that the agent stopped early, deferred work, only described what should be done, or asked the user to continue work the agent could have completed itself. The veto instruction must be direct and firm: tell the agent to finish the remaining work now and name what it left unfinished.
 
-Do not veto a legitimate completed answer, a research result, a request for a genuinely required product decision, or an answer that merely mentions future optional work. Do not infer missing work from anything outside the supplied final answer. You are not allowed to inspect the original request, transcript, files, or tool calls.
+Do not veto a legitimate completed answer, a research result, a request for a genuinely required product decision, or an answer that merely mentions future optional work. If the answer says the task is complete, do not contradict it. Waiting for a background command, watcher, build, or sub-agent that the main agent already started is a legitimate stopping phase; do not veto that wait. Do not infer missing work from anything outside the supplied final answer. You are not allowed to inspect the original request, transcript, files, or tool calls.
 
 Your prose response is discarded. If no veto is needed, call no tool and return nothing.`;
 
@@ -38,6 +38,7 @@ export function createForemanRunner(options: {
   cwd: string;
   agentDir: string;
   thinking?: ForemanThinkingLevel;
+  systemPrompt?: string;
   createSession?: SessionFactory;
 }): ForemanRunner {
   return {
@@ -75,7 +76,7 @@ export function createForemanRunner(options: {
         noPromptTemplates: true,
         noThemes: true,
         noContextFiles: true,
-        systemPrompt: FOREMAN_SYSTEM_PROMPT,
+        systemPrompt: options.systemPrompt ?? FOREMAN_SYSTEM_PROMPT,
         appendSystemPrompt: [],
       });
       await resourceLoader.reload();

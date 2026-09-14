@@ -19,7 +19,7 @@ The tests are still waiting. The implementation has a "small follow-up." The age
 
 Pi Agent Foreman watches the final answer after every settled Pi run. If the agent openly admits that it stopped before finishing required work, a small second model gives it one firm instruction: finish the job now.
 
-No transcript review. No tool-call archaeology. No custom prompts. The foreman sees only the last answer and either calls `veto` or stays quiet.
+No transcript review. No tool-call archaeology. The foreman sees only the last answer and either calls `veto` or stays quiet.
 
 ## Install
 
@@ -57,6 +57,34 @@ The selection is stored globally in Pi's `settings.json`:
 
 You do not need to edit this file yourself.
 
+## Custom prompt
+
+Create either a project prompt:
+
+```text
+.pi/agent-foreman/prompt.md
+.pi/agent-foreman/config.json
+```
+
+or a global prompt:
+
+```text
+~/.pi/agent/agent-foreman/prompt.md
+~/.pi/agent/agent-foreman/config.json
+```
+
+A trusted project prompt takes precedence over the global prompt. The project file is ignored when the project is not trusted.
+
+Without `config.json`, `prompt.md` completely replaces the built-in reviewer prompt. To append your instructions instead, add:
+
+```json
+{
+  "mode": "append"
+}
+```
+
+The supported modes are `override` and `append`. If the prompt or configuration cannot be read, Foreman shows a warning and uses its built-in prompt.
+
 ## What it looks like
 
 When the foreman catches an unfinished answer:
@@ -67,7 +95,7 @@ When the foreman catches an unfinished answer:
 
 The instruction itself is delivered as a normal user message. The main agent does not receive a foreman wrapper or hidden transcript.
 
-Pressing Esc to abort a run never summons the foreman. Research answers and genuinely completed work are left alone.
+Pressing Esc to abort a run never summons the foreman. Research answers, genuinely completed work, and agents waiting for background work or sub-agents they already started are left alone.
 
 ## Development
 

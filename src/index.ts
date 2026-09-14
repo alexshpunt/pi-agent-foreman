@@ -7,6 +7,7 @@ import {
 import { Text } from "@earendil-works/pi-tui";
 import type { ModelLike } from "./models.ts";
 import { resolveForemanModel } from "./models.ts";
+import { resolveForemanPrompt } from "./prompt.ts";
 import { createForemanRunner } from "./runner.ts";
 import {
   type ForemanSettings,
@@ -95,11 +96,18 @@ export default function agentForeman(pi: ExtensionAPI) {
     const controller = new AbortController();
     activeRun = controller;
     try {
+      const prompt = resolveForemanPrompt({
+        cwd: ctx.cwd,
+        agentDir: getAgentDir(),
+        projectTrusted: ctx.isProjectTrusted(),
+      });
+      if (prompt.warning && ctx.hasUI) ctx.ui.notify(prompt.warning, "warning");
       const runner = createForemanRunner({
         model,
         thinking: settings.thinking ?? ctx.thinkingLevel,
         cwd: ctx.cwd,
         agentDir: getAgentDir(),
+        systemPrompt: prompt.prompt,
       });
       const instruction = await runner.run(answer, controller.signal);
       if (!instruction || stopped || controller.signal.aborted) return;
