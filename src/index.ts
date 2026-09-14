@@ -131,7 +131,14 @@ export default function agentForeman(pi: ExtensionAPI) {
       const instruction = await runner.run(exchange.user, exchange.assistant, controller.signal);
       if (!instruction || stopped || controller.signal.aborted) return;
       pi.appendEntry(CONTINUED_ENTRY, {});
-      pi.sendUserMessage(instruction);
+      pi.sendMessage(
+        {
+          customType: CONTINUED_ENTRY,
+          content: instruction,
+          display: true,
+        },
+        { triggerTurn: true },
+      );
     } catch (error) {
       if (!controller.signal.aborted && ctx.hasUI) {
         ctx.ui.notify(`Agent Foreman failed: ${String(error)}`, "warning");
