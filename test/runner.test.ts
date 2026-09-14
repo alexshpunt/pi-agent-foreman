@@ -2,6 +2,12 @@ import { describe, expect, it, vi } from "vitest";
 import { createForemanRunner, FOREMAN_SYSTEM_PROMPT } from "../src/runner.ts";
 
 describe("foreman runner", () => {
+  it("treats completion and active background waits as legitimate", () => {
+    expect(FOREMAN_SYSTEM_PROMPT).toContain("If the answer says the task is complete");
+    expect(FOREMAN_SYSTEM_PROMPT).toContain(
+      "Waiting for a background command, watcher, build, or sub-agent",
+    );
+  });
   it("gives a fresh agent only the final answer and accepts only a veto call", async () => {
     let options: any;
     const prompt = vi.fn(async () => {
@@ -17,6 +23,7 @@ describe("foreman runner", () => {
       cwd: "/tmp",
       agentDir: "/tmp",
       thinking: "high",
+      systemPrompt: "custom foreman prompt",
       createSession,
     });
 
@@ -26,7 +33,7 @@ describe("foreman runner", () => {
     });
     expect(options.tools).toEqual(["veto"]);
     expect(options.thinkingLevel).toBe("high");
-    expect(options.resourceLoader.getSystemPrompt()).toBe(FOREMAN_SYSTEM_PROMPT);
+    expect(options.resourceLoader.getSystemPrompt()).toBe("custom foreman prompt");
   });
 
   it("returns nothing when the model does not call veto", async () => {
