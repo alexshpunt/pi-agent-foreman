@@ -7,6 +7,7 @@ describe("foreman runner", () => {
     expect(FOREMAN_SYSTEM_PROMPT).toContain(
       "Waiting for a background command, watcher, build, or sub-agent",
     );
+    expect(FOREMAN_SYSTEM_PROMPT).toContain("If the user explicitly told the agent to stop");
   });
   it("gives a fresh agent only the final answer and accepts only a veto call", async () => {
     let options: any;
@@ -27,10 +28,13 @@ describe("foreman runner", () => {
       createSession,
     });
 
-    await expect(runner.run("I did not run the tests.")).resolves.toBe("Finish the tests now.");
-    expect(prompt).toHaveBeenCalledWith("I did not run the tests.", {
-      expandPromptTemplates: false,
-    });
+    await expect(runner.run("Finish the task.", "I did not run the tests.")).resolves.toBe(
+      "Finish the tests now.",
+    );
+    expect(prompt).toHaveBeenCalledWith(
+      "<last-user-message>\nFinish the task.\n</last-user-message>\n\n<last-assistant-message>\nI did not run the tests.\n</last-assistant-message>",
+      { expandPromptTemplates: false },
+    );
     expect(options.tools).toEqual(["veto"]);
     expect(options.thinkingLevel).toBe("high");
     expect(options.resourceLoader.getSystemPrompt()).toBe("custom foreman prompt");
@@ -46,6 +50,6 @@ describe("foreman runner", () => {
       agentDir: "/tmp",
       createSession,
     });
-    await expect(runner.run("Research complete.")).resolves.toBeUndefined();
+    await expect(runner.run("Research this.", "Research complete.")).resolves.toBeUndefined();
   });
 });

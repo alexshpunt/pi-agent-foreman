@@ -17,9 +17,9 @@ The tests are still waiting. The implementation has a "small follow-up." The age
 
 **Foreman sends it back to work.**
 
-Pi Agent Foreman watches the final answer after every settled Pi run. If the agent openly admits that it stopped before finishing required work, a small second model gives it one firm instruction: finish the job now.
+Pi Agent Foreman watches the final exchange after every settled Pi run. If the agent openly admits that it stopped before finishing required work, a small second model gives it one firm instruction: finish the job now.
 
-No transcript review. No tool-call archaeology. The foreman sees only the last answer and either calls `veto` or stays quiet.
+No transcript review. No tool-call archaeology. The foreman sees only the last user message and the last assistant answer, then either calls `veto` or stays quiet. This lets it respect an explicit request to stop, pause, or leave the remaining work alone.
 
 ## Install
 

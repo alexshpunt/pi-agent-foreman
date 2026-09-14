@@ -23,28 +23,47 @@ interface SessionReader {
   sessionManager?: { getBranch?: () => unknown[] };
 }
 
-/** Return the final assistant text, unless the settle followed a user abort. */
-export function settledAssistantText(ctx: unknown): string | undefined {
+export interface SettledExchange {
+  user: string;
+  assistant: string;
+}
+
+function messageText(content: unknown): string | undefined {
+  if (typeof content === "string") return content.trim() || undefined;
+  if (!Array.isArray(content)) return undefined;
+  const text = content
+    .filter((part): part is { type: "text"; text: string } => {
+      if (typeof part !== "object" || part === null) return false;
+      const value = part as { type?: unknown; text?: unknown };
+      return value.type === "text" && typeof value.text === "string";
+    })
+    .map((part) => part.text)
+    .join("\n")
+    .trim();
+  return text || undefined;
+}
+
+/** Return the final user/assistant exchange, unless the settle followed a user abort. */
+export function settledExchange(ctx: unknown): SettledExchange | undefined {
   const entries = (ctx as SessionReader)?.sessionManager?.getBranch?.() ?? [];
+  let assistant: string | undefined;
   for (let index = entries.length - 1; index >= 0; index--) {
     const entry = entries[index] as {
       type?: string;
       message?: { role?: string; content?: unknown; stopReason?: string };
     };
     if (entry.type !== "message") continue;
-    if (entry.message?.role !== "assistant") return undefined;
-    if (entry.message.stopReason === "aborted") return undefined;
-    if (!Array.isArray(entry.message.content)) return undefined;
-    const text = entry.message.content
-      .filter((part): part is { type: "text"; text: string } => {
-        if (typeof part !== "object" || part === null) return false;
-        const value = part as { type?: unknown; text?: unknown };
-        return value.type === "text" && typeof value.text === "string";
-      })
-      .map((part) => part.text)
-      .join("\n")
-      .trim();
-    return text || undefined;
+    if (!assistant) {
+      if (entry.message?.role !== "assistant" || entry.message.stopReason === "aborted") {
+        return undefined;
+      }
+      assistant = messageText(entry.message.content);
+      if (!assistant) return undefined;
+      continue;
+    }
+    if (entry.message?.role !== "user") continue;
+    const user = messageText(entry.message.content);
+    return user ? { user, assistant } : undefined;
   }
   return undefined;
 }
@@ -81,8 +100,8 @@ export default function agentForeman(pi: ExtensionAPI) {
 
   async function observe(ctx: ExtensionContext): Promise<void> {
     if (running || stopped) return;
-    const answer = settledAssistantText(ctx);
-    if (!answer) return;
+    const exchange = settledExchange(ctx);
+    if (!exchange) return;
 
     const settings = settingsFrom(ctx);
     if (!settings.enabled) return;
@@ -109,7 +128,7 @@ export default function agentForeman(pi: ExtensionAPI) {
         agentDir: getAgentDir(),
         systemPrompt: prompt.prompt,
       });
-      const instruction = await runner.run(answer, controller.signal);
+      const instruction = await runner.run(exchange.user, exchange.assistant, controller.signal);
       if (!instruction || stopped || controller.signal.aborted) return;
       pi.appendEntry(CONTINUED_ENTRY, {});
       pi.sendUserMessage(instruction);
