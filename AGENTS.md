@@ -20,6 +20,12 @@ Use this workflow for every change in this repository.
 
 Do not merge unfinished or failing work into `develop`.
 
+## Tests
+
+- Test executable behavior, code, and infrastructure only.
+- Do not add regression tests that assert prompt wording, documentation, Markdown, or the presence of specific phrases.
+- Prompt and documentation changes do not need tests unless executable parsing or loading behavior changes.
+
 ## Make a release
 
 1. Start only when `develop` is complete, clean, and passing CI.
