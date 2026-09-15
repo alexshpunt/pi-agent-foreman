@@ -25,7 +25,7 @@ interface SessionReader {
 
 export interface SettledExchange {
   user: string;
-  assistant: string;
+  activity: string;
 }
 
 function messageText(content: unknown): string | undefined {
@@ -43,27 +43,91 @@ function messageText(content: unknown): string | undefined {
   return text || undefined;
 }
 
-/** Return the final user/assistant exchange, unless the settle followed a user abort. */
+const TOOL_ARGUMENT_LIMIT = 1_000;
+const ACTIVITY_LIMIT = 12_000;
+
+function shorten(value: string, limit: number): string {
+  if (value.length <= limit) return value;
+  const head = Math.ceil((limit - 1) / 2);
+  const tail = Math.floor((limit - 1) / 2);
+  return `${value.slice(0, head)}…${value.slice(-tail)}`;
+}
+
+function activityLines(message: {
+  role?: string;
+  content?: unknown;
+  toolName?: unknown;
+  isError?: unknown;
+}): string[] {
+  if (message.role === "toolResult") {
+    if (typeof message.toolName !== "string") return [];
+    return [`[tool ${message.isError ? "error" : "ok"}] ${message.toolName}`];
+  }
+  if (message.role !== "assistant" || !Array.isArray(message.content)) return [];
+
+  const lines: string[] = [];
+  for (const part of message.content) {
+    if (typeof part !== "object" || part === null) continue;
+    const block = part as {
+      type?: unknown;
+      text?: unknown;
+      name?: unknown;
+      arguments?: unknown;
+    };
+    if (block.type === "text" && typeof block.text === "string" && block.text.trim()) {
+      lines.push(`[assistant] ${block.text.trim()}`);
+    }
+    if (block.type === "toolCall" && typeof block.name === "string") {
+      let args: string;
+      try {
+        args = JSON.stringify(block.arguments ?? {}) ?? "undefined";
+      } catch {
+        args = "[unserializable arguments]";
+      }
+      lines.push(`[tool] ${block.name} ${shorten(args, TOOL_ARGUMENT_LIMIT)}`);
+    }
+  }
+  return lines;
+}
+
+/** Return the latest user request and the agent activity that followed it. */
 export function settledExchange(ctx: unknown): SettledExchange | undefined {
   const entries = (ctx as SessionReader)?.sessionManager?.getBranch?.() ?? [];
-  let assistant: string | undefined;
+  let finalMessageIndex = -1;
   for (let index = entries.length - 1; index >= 0; index--) {
     const entry = entries[index] as {
       type?: string;
       message?: { role?: string; content?: unknown; stopReason?: string };
     };
     if (entry.type !== "message") continue;
-    if (!assistant) {
-      if (entry.message?.role !== "assistant" || entry.message.stopReason === "aborted") {
-        return undefined;
-      }
-      assistant = messageText(entry.message.content);
-      if (!assistant) return undefined;
-      continue;
+    if (entry.message?.role !== "assistant" || entry.message.stopReason === "aborted") {
+      return undefined;
     }
-    if (entry.message?.role !== "user") continue;
+    if (!messageText(entry.message.content)) return undefined;
+    finalMessageIndex = index;
+    break;
+  }
+  if (finalMessageIndex < 0) return undefined;
+
+  for (let index = finalMessageIndex - 1; index >= 0; index--) {
+    const entry = entries[index] as {
+      type?: string;
+      message?: { role?: string; content?: unknown };
+    };
+    if (entry.type !== "message" || entry.message?.role !== "user") continue;
     const user = messageText(entry.message.content);
-    return user ? { user, assistant } : undefined;
+    if (!user) return undefined;
+    const activity = entries
+      .slice(index + 1, finalMessageIndex + 1)
+      .flatMap((candidate) => {
+        const value = candidate as {
+          type?: string;
+          message?: Parameters<typeof activityLines>[0];
+        };
+        return value.type === "message" && value.message ? activityLines(value.message) : [];
+      })
+      .join("\n");
+    return activity ? { user, activity: shorten(activity, ACTIVITY_LIMIT) } : undefined;
   }
   return undefined;
 }
@@ -128,7 +192,7 @@ export default function agentForeman(pi: ExtensionAPI) {
         agentDir: getAgentDir(),
         systemPrompt: prompt.prompt,
       });
-      const instruction = await runner.run(exchange.user, exchange.assistant, controller.signal);
+      const instruction = await runner.run(exchange.user, exchange.activity, controller.signal);
       if (!instruction || stopped || controller.signal.aborted) return;
       pi.appendEntry(CONTINUED_ENTRY, {});
       pi.sendMessage(
