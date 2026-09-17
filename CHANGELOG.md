@@ -2,6 +2,14 @@
 
 Releases before 0.5.0 are described in the [GitHub releases](https://github.com/alexshpunt/pi-agent-foreman/releases).
 
+## 0.5.1
+
+### Changed
+
+- Expanded package metadata so Foreman is easier to find in npm and Pi Packages.
+- Documented review cost, inspected context, compatibility, and fallback behaviour.
+- Updated the package author name.
+
 ## 0.5.0
 
 ### Added

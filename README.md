@@ -27,6 +27,19 @@ The foreman sees the last user message and the agent activity that followed it, 
 pi install npm:pi-agent-foreman
 ```
 
+Requires Pi 0.83 or newer. Foreman uses the Node.js runtime bundled with your Pi
+installation.
+
+## Cost and privacy
+
+When enabled, Foreman makes one extra review request after each settled Pi run. `auto` uses
+TypeSafe when a key is configured and the selected Pi model otherwise. If TypeSafe is
+unavailable, Foreman falls back to the model judge.
+
+The reviewer receives the last user message plus the assistant's text, compact tool arguments,
+and success or error statuses. It does not receive private thinking or full tool results.
+TypeSafe decisions are stored locally in `<agent dir>/agent-foreman/decisions.jsonl`.
+
 ## Set up the foreman
 
 Run:
