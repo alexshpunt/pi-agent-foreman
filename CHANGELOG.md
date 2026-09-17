@@ -2,6 +2,12 @@
 
 Releases before 0.5.0 are described in the [GitHub releases](https://github.com/alexshpunt/pi-agent-foreman/releases).
 
+## 0.5.2
+
+### Changed
+
+- Added search terms for agent monitoring, control, and task completion.
+
 ## 0.5.1
 
 ### Changed

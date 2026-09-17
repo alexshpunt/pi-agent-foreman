@@ -1,6 +1,6 @@
 {
   "name": "pi-agent-foreman",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "Send Pi agents back to work when they stop before the job is done.",
   "type": "module",
   "license": "MIT",
@@ -32,7 +32,14 @@
     "foreman",
     "typesafe",
     "typesafe-ai",
-    "jev"
+    "jev",
+    "agentic-coding",
+    "agent-monitoring",
+    "agent-control",
+    "task-completion",
+    "unfinished-work",
+    "llm-agent",
+    "coding-agent-tools"
   ],
   "dependencies": {
     "@typesafe-ai/sdk": "^0.6.0"
