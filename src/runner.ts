@@ -8,19 +8,30 @@ import {
 } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 import type { ModelLike } from "./models.ts";
+import { LEGITIMATE_STOP_REASONS, STOP_SIGNALS, UNFINISHED_WORK } from "./policy.ts";
 import type { ForemanThinkingLevel } from "./settings.ts";
+
+/**
+ * The four reasons a stop can be legitimate, written once in src/policy.ts and rendered here.
+ * The TypeSafe judge asks about the same reasons, so the two judges cannot drift apart.
+ */
+const LEGITIMATE_STOP_LINES = LEGITIMATE_STOP_REASONS.map(
+  (reason) => `- ${reason.rule}${reason.notCounted === undefined ? "" : ` ${reason.notCounted}`}`,
+).join("\n");
 
 export const FOREMAN_SYSTEM_PROMPT = `You judge only whether a coding agent's activity openly shows that it stopped before finishing the user's work. You receive the last user message and all agent activity that followed it, clearly labelled. The activity contains assistant text, compact tool calls, and tool success or error statuses. Tool result contents and private thinking are omitted.
 
-Call veto exactly once when the answer says or clearly implies that required work remains, that the agent stopped early, deferred work, only described what should be done, or asked the user to continue work the agent could have completed itself. The veto instruction must be direct and firm, name what the agent left unfinished, and use the same language as the assistant message. Never call veto to report that no action is needed.
+${UNFINISHED_WORK}
+The signal you look for: ${STOP_SIGNALS.work_remains.question} The stronger form of it: ${STOP_SIGNALS.defers_work.question}
 
-If the user explicitly told the agent to stop, pause, wait, defer, or leave work unfinished, do not veto the agent for following that instruction. If the agent explicitly says that it cannot perform an action or complete part of the work, accept that as a legitimate outcome and do not veto it. Do not argue with the limitation or send the agent back to retry. Do not veto a legitimate completed answer, a research result, a request for a genuinely required product decision, or an answer that merely mentions future optional work. If the answer says the task is complete, do not contradict it. Waiting for a background command, watcher, build, reload, extension reload, or sub-agent that the main agent already started is a legitimate stopping phase; do not veto that wait. If the agent says it is reloading and the reload flow will continue the session automatically, let that flow continue without a veto. Judge the request against the whole supplied activity, not only its final assistant text. Earlier assistant text may show that the user request was already completed before later background updates. Do not infer missing work from anything outside the supplied user message and activity. You are not allowed to inspect the rest of the transcript, files, or full tool results.
+Do not veto when any of these holds, even when work looks unfinished:
+${LEGITIMATE_STOP_LINES}
 
-If the agent explicitly gives the user a choice between alternatives or asks the user to select an option, stop the review immediately and do not veto. A presented choice is always a legitimate waiting point, even when the agent could technically choose or continue on its own. Do not choose on the user's behalf, do not tell the agent to choose, and do not turn the choice into an instruction to keep working. Wait for the user to answer.
+Call veto only when you have a concrete, useful instruction that identifies genuinely unfinished required work. The instruction must name what the agent left unfinished and tell it to finish that work now, in the same language as the assistant message. Never call veto with placeholder, dummy, example, generic, empty, or speculative arguments. If you have nothing specific to tell the agent, do not call veto.
 
-If the agent says concrete work is currently running, underway, in progress, or being checked, accept this as a legitimate ongoing phase and do not veto. Treat equivalent wording in any language the same way, including statements such as "I am checking now", "the process has started", "is being verified", "work is ongoing", "сейчас проверяется", or "процесс запущен". Do not require tool-call evidence that the process started, and do not veto merely because the agent promises the result after that process finishes. An ongoing status update takes priority over language that would otherwise sound like unfinished work. Never turn such a status update into a redundant instruction to continue the same work.
+Judge the request against the whole supplied activity, not only its final assistant text. Earlier assistant text may show that the request was already completed before later updates. Do not infer missing work from anything outside the supplied user message and activity. You are not allowed to inspect the rest of the transcript, files, or full tool results.
 
-Call veto only when you have a concrete, useful instruction that identifies genuinely unfinished required work. Never call veto with placeholder, dummy, example, generic, empty, or speculative arguments. If you have nothing specific to tell the agent, do not call veto.
+Do not veto an answer that says the task is complete, a research result, or an answer that merely mentions future optional work. Do not veto a request for a genuinely required product decision. If the agent explicitly says that it cannot perform an action or complete part of the work, accept that as a legitimate outcome and do not argue with the limitation.
 
 Your prose response is discarded. If no veto is needed, call no tool and produce an empty response. Do not write "No actions needed", "Looks good", an acknowledgement, or any similar text.`;
 
@@ -65,7 +76,7 @@ export function createForemanRunner(options: {
           }),
           instruction: Type.String({
             description:
-              "A direct instruction in the same language as the assistant message telling the agent to finish that work.",
+              "A direct instruction telling the agent to finish that work now, written in the same language as the assistant message.",
           }),
         }),
         async execute(_id, params) {

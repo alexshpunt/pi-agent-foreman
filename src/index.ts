@@ -5,17 +5,25 @@ import {
   SettingsManager,
 } from "@earendil-works/pi-coding-agent";
 import { Text } from "@earendil-works/pi-tui";
+import { createDecisionLog } from "./decisions.ts";
 import type { ModelLike } from "./models.ts";
 import { resolveForemanModel } from "./models.ts";
 import { resolveForemanPrompt } from "./prompt.ts";
-import { createForemanRunner } from "./runner.ts";
+import { createForemanRunner, type ForemanRunner } from "./runner.ts";
 import {
+  type ForemanJudge,
   type ForemanSettings,
   type ForemanThinkingLevel,
+  JUDGES,
   parseSettings,
   THINKING_LEVELS,
   writeGlobalForemanSettings,
 } from "./settings.ts";
+import {
+  createTypeSafeRunner,
+  resolveTypeSafeKey,
+  TypeSafeNotConfiguredError,
+} from "./typesafe.ts";
 
 export const CONTINUED_ENTRY = "agent-foreman-continued";
 
@@ -132,6 +140,65 @@ export function settledExchange(ctx: unknown): SettledExchange | undefined {
   return undefined;
 }
 
+/** The model judge: a nested agent that either calls veto or stays quiet. */
+async function createModelRunner(
+  ctx: ExtensionContext,
+  settings: ForemanSettings,
+): Promise<ForemanRunner | undefined> {
+  const configured = resolveForemanModel(settings.model, {
+    find: (provider, id) => ctx.modelRegistry.find(provider, id),
+  });
+  const model = configured ?? ctx.model;
+  if (!model) return undefined;
+
+  const prompt = resolveForemanPrompt({
+    cwd: ctx.cwd,
+    agentDir: getAgentDir(),
+    projectTrusted: ctx.isProjectTrusted(),
+  });
+  if (prompt.warning && ctx.hasUI) ctx.ui.notify(prompt.warning, "warning");
+
+  return createForemanRunner({
+    model,
+    thinking: settings.thinking ?? ctx.thinkingLevel,
+    cwd: ctx.cwd,
+    agentDir: getAgentDir(),
+    systemPrompt: prompt.prompt,
+  });
+}
+
+/**
+ * Build the runner the current settings ask for.
+ *
+ * The TypeSafe judge keeps the model judge as its fallback, so a missing key, a refused
+ * request, or a service that is down leaves the review working the way it did before.
+ */
+async function createRunner(
+  ctx: ExtensionContext,
+  settings: ForemanSettings,
+  onFallback: (error: Error) => void,
+): Promise<ForemanRunner | undefined> {
+  const mode = settings.judge ?? "auto";
+  const modelRunner =
+    mode === "typesafe" || mode === "auto" ? await createModelRunner(ctx, settings) : undefined;
+
+  if (mode === "model") return modelRunner;
+
+  const key = resolveTypeSafeKey();
+  if (mode === "auto" && !key) return modelRunner;
+
+  const log = createDecisionLog(getAgentDir());
+  return createTypeSafeRunner({
+    ...(settings.threshold === undefined
+      ? {}
+      : { thresholds: { workRemains: settings.threshold } }),
+    onDecision: (verdict, decision, instruction) =>
+      log({ cwd: ctx.cwd, verdict, decision, instruction }),
+    ...(modelRunner === undefined ? {} : { fallback: modelRunner }),
+    onFallback,
+  });
+}
+
 function settingsFrom(ctx: ExtensionContext): ForemanSettings {
   const manager = SettingsManager.create(ctx.cwd, getAgentDir(), { projectTrusted: false });
   const root = manager.getGlobalSettings() as unknown as Record<string, unknown>;
@@ -150,6 +217,8 @@ function availableModels(ctx: ExtensionContext): ModelLike[] {
 export default function agentForeman(pi: ExtensionAPI) {
   let running = false;
   let stopped = false;
+  let keyWarningShown = false;
+  let fallbackNoticeShown = false;
   let activeRun: AbortController | undefined;
 
   pi.registerEntryRenderer(
@@ -160,6 +229,8 @@ export default function agentForeman(pi: ExtensionAPI) {
 
   pi.on("session_start", () => {
     stopped = false;
+    keyWarningShown = false;
+    fallbackNoticeShown = false;
   });
 
   async function observe(ctx: ExtensionContext): Promise<void> {
@@ -169,29 +240,20 @@ export default function agentForeman(pi: ExtensionAPI) {
 
     const settings = settingsFrom(ctx);
     if (!settings.enabled) return;
-    const configured = resolveForemanModel(settings.model, {
-      find: (provider, id) => ctx.modelRegistry.find(provider, id),
-    });
-    const model = configured ?? ctx.model;
-    if (!model) return;
 
     running = true;
     const controller = new AbortController();
     activeRun = controller;
     try {
-      const prompt = resolveForemanPrompt({
-        cwd: ctx.cwd,
-        agentDir: getAgentDir(),
-        projectTrusted: ctx.isProjectTrusted(),
+      const runner = await createRunner(ctx, settings, (error) => {
+        if (fallbackNoticeShown || !ctx.hasUI) return;
+        ctx.ui.notify(
+          `TypeSafe judge unavailable, using the model judge: ${error.message}`,
+          "warning",
+        );
+        fallbackNoticeShown = true;
       });
-      if (prompt.warning && ctx.hasUI) ctx.ui.notify(prompt.warning, "warning");
-      const runner = createForemanRunner({
-        model,
-        thinking: settings.thinking ?? ctx.thinkingLevel,
-        cwd: ctx.cwd,
-        agentDir: getAgentDir(),
-        systemPrompt: prompt.prompt,
-      });
+      if (!runner) return;
       const instruction = await runner.run(exchange.user, exchange.activity, controller.signal);
       if (!instruction || stopped || controller.signal.aborted) return;
       pi.appendEntry(CONTINUED_ENTRY, {});
@@ -204,7 +266,12 @@ export default function agentForeman(pi: ExtensionAPI) {
         { triggerTurn: true },
       );
     } catch (error) {
-      if (!controller.signal.aborted && ctx.hasUI) {
+      if (error instanceof TypeSafeNotConfiguredError) {
+        if (!keyWarningShown && ctx.hasUI) {
+          ctx.ui.notify(error.message, "warning");
+          keyWarningShown = true;
+        }
+      } else if (!controller.signal.aborted && ctx.hasUI) {
         ctx.ui.notify(`Agent Foreman failed: ${String(error)}`, "warning");
       }
     } finally {
@@ -226,9 +293,12 @@ export default function agentForeman(pi: ExtensionAPI) {
       if (!ctx.hasUI) return;
       const current = settingsFrom(ctx);
       const activeModel = current.model ?? (ctx.model ? modelReference(ctx.model) : "none");
+      const typeSafeKey = resolveTypeSafeKey();
       const action = await ctx.ui.select("Agent Foreman", [
         `Back to Work: ${current.enabled ? "on" : "off"}`,
         `Choose foreman (${activeModel}, ${current.thinking ?? ctx.thinkingLevel})`,
+        `Judge: ${current.judge ?? "auto"}`,
+        `TypeSafe key: ${typeSafeKey?.source ?? "missing"}`,
       ]);
       if (!action) return;
 
@@ -236,6 +306,29 @@ export default function agentForeman(pi: ExtensionAPI) {
         const next = { ...current, enabled: !current.enabled };
         writeGlobalForemanSettings(next);
         ctx.ui.notify(`Back to Work ${next.enabled ? "enabled" : "disabled"}.`, "info");
+        return;
+      }
+
+      if (action.startsWith("TypeSafe key:")) {
+        ctx.ui.notify(
+          typeSafeKey
+            ? `TypeSafe key taken from ${typeSafeKey.source}.`
+            : 'No TypeSafe key. Set TYPESAFE_API_KEY, or add { "type": "api_key", "key": "..." } under "typesafe" in Pi\'s auth file.',
+          typeSafeKey ? "info" : "warning",
+        );
+        return;
+      }
+
+      if (action.startsWith("Judge:")) {
+        // Three modes, cycled in the order that needs the least thinking: auto first.
+        const order = JUDGES;
+        const position = order.indexOf(current.judge ?? "auto");
+        const judge = order[(position + 1) % order.length] as ForemanJudge;
+        writeGlobalForemanSettings({ ...current, judge });
+        ctx.ui.notify(
+          `Judge: ${judge}.${judge === "model" ? "" : ' The key for TypeSafe comes from TYPESAFE_API_KEY or the "typesafe" entry in Pi\'s auth file.'}`,
+          "info",
+        );
         return;
       }
 
@@ -251,7 +344,7 @@ export default function agentForeman(pi: ExtensionAPI) {
       const choice = await ctx.ui.select("Choose foreman reasoning", levels);
       const thinking = THINKING_LEVELS.find((level) => level === choice);
       if (!thinking) return;
-      writeGlobalForemanSettings({ enabled: true, model: selectedReference, thinking });
+      writeGlobalForemanSettings({ ...current, enabled: true, model: selectedReference, thinking });
       ctx.ui.notify(`Agent Foreman enabled: ${selectedReference} · ${thinking}.`, "info");
     },
   });

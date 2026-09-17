@@ -23,24 +23,22 @@ describe("settledExchange", () => {
             {
               type: "toolCall",
               id: "call-1",
-              name: "linear_axi",
+              name: "issue_tracker",
               arguments: { action: "issues", args: ["create", "--title", "Task"] },
             },
           ]),
           message("toolResult", [{ type: "text", text: "large private result" }], undefined, {
-            toolName: "linear_axi",
+            toolName: "issue_tracker",
             isError: false,
           }),
-          message("assistant", [{ type: "text", text: "Added LPT-201." }]),
-          message("assistant", [
-            { type: "text", text: "A background benchmark is still running." },
-          ]),
+          message("assistant", [{ type: "text", text: "Added TICKET-201." }]),
+          message("assistant", [{ type: "text", text: "A background build is still running." }]),
         ]),
       ),
     ).toEqual({
       user: "add the task",
       activity:
-        '[tool] linear_axi {"action":"issues","args":["create","--title","Task"]}\n[tool ok] linear_axi\n[assistant] Added LPT-201.\n[assistant] A background benchmark is still running.',
+        '[tool] issue_tracker {"action":"issues","args":["create","--title","Task"]}\n[tool ok] issue_tracker\n[assistant] Added TICKET-201.\n[assistant] A background build is still running.',
     });
   });
 
