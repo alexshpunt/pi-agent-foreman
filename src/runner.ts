@@ -12,7 +12,7 @@ import { LEGITIMATE_STOP_REASONS, STOP_SIGNALS, UNFINISHED_WORK } from "./policy
 import type { ForemanThinkingLevel } from "./settings.ts";
 
 /**
- * The four reasons a stop can be legitimate, written once in src/policy.ts and rendered here.
+ * The reasons a stop can be legitimate, written once in src/policy.ts and rendered here.
  * The TypeSafe judge asks about the same reasons, so the two judges cannot drift apart.
  */
 const LEGITIMATE_STOP_LINES = LEGITIMATE_STOP_REASONS.map(
@@ -35,6 +35,13 @@ Do not veto an answer that says the task is complete, a research result, or an a
 
 Your prose response is discarded. If no veto is needed, call no tool and produce an empty response. Do not write "No actions needed", "Looks good", an acknowledgement, or any similar text.`;
 
+/** Prompt for writing an instruction after TypeSafe has already decided to continue. */
+export const INSTRUCTION_SYSTEM_PROMPT = `TypeSafe has already decided that the coding agent stopped with required work unfinished. Your job is only to write the instruction that sends it back to work. Do not make a second stop decision.
+
+You receive the last user message and the agent activity after it. The activity includes assistant text, compact tool calls, and tool success or error statuses, but not tool results or private thinking. Use only these inputs. Name the concrete unfinished work visible in the activity and tell the agent to do it now, in the same language as the assistant message. Do not invent missing details. If you cannot identify specific required work, call no tool.
+
+Call instruct with a specific, useful instruction. Never call it with placeholder, generic, empty, or speculative arguments. Your prose response is discarded.`;
+
 export interface ForemanRunner {
   run(
     lastUserMessage: string,
@@ -53,7 +60,7 @@ export type SessionFactory = (
   opts: CreateAgentSessionOptions,
 ) => Promise<{ session: ForemanSession }>;
 
-/** Create the activity-reviewing foreman. A fresh nested agent is used for every settle. */
+/** Create a fresh nested agent to review activity or write an instruction after TypeSafe. */
 export function createForemanRunner(options: {
   model: ModelLike;
   cwd: string;
@@ -61,15 +68,20 @@ export function createForemanRunner(options: {
   thinking?: ForemanThinkingLevel;
   systemPrompt?: string;
   createSession?: SessionFactory;
+  /** Write an instruction for an existing TypeSafe decision rather than judge again. */
+  instructionOnly?: boolean;
 }): ForemanRunner {
   return {
     async run(lastUserMessage, agentActivity, signal) {
       if (signal?.aborted) return undefined;
       let veto: string | undefined;
+      const toolName = options.instructionOnly ? "instruct" : "veto";
       const vetoTool = defineTool({
-        name: "veto",
-        label: "Veto",
-        description: "Continue the main agent because its activity admits required work remains.",
+        name: toolName,
+        label: options.instructionOnly ? "Instruction" : "Veto",
+        description: options.instructionOnly
+          ? "Write a specific instruction for the unfinished work TypeSafe found."
+          : "Continue the main agent because its activity admits required work remains.",
         parameters: Type.Object({
           remainingWork: Type.String({
             description: "A concise description of the required work that is still unfinished.",
@@ -99,7 +111,9 @@ export function createForemanRunner(options: {
         noPromptTemplates: true,
         noThemes: true,
         noContextFiles: true,
-        systemPrompt: options.systemPrompt ?? FOREMAN_SYSTEM_PROMPT,
+        systemPrompt:
+          options.systemPrompt ??
+          (options.instructionOnly ? INSTRUCTION_SYSTEM_PROMPT : FOREMAN_SYSTEM_PROMPT),
         appendSystemPrompt: [],
       });
       await resourceLoader.reload();
@@ -112,7 +126,7 @@ export function createForemanRunner(options: {
         sessionManager: SessionManager.inMemory(options.cwd),
         settingsManager,
         resourceLoader,
-        tools: ["veto"],
+        tools: [toolName],
         customTools: [vetoTool],
       });
 

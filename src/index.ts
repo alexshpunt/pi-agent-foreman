@@ -140,10 +140,11 @@ export function settledExchange(ctx: unknown): SettledExchange | undefined {
   return undefined;
 }
 
-/** The model judge: a nested agent that either calls veto or stays quiet. */
+/** A nested model that judges a stop or writes an instruction after TypeSafe judges it. */
 async function createModelRunner(
   ctx: ExtensionContext,
   settings: ForemanSettings,
+  instructionOnly = false,
 ): Promise<ForemanRunner | undefined> {
   const configured = resolveForemanModel(settings.model, {
     find: (provider, id) => ctx.modelRegistry.find(provider, id),
@@ -151,19 +152,22 @@ async function createModelRunner(
   const model = configured ?? ctx.model;
   if (!model) return undefined;
 
-  const prompt = resolveForemanPrompt({
-    cwd: ctx.cwd,
-    agentDir: getAgentDir(),
-    projectTrusted: ctx.isProjectTrusted(),
-  });
-  if (prompt.warning && ctx.hasUI) ctx.ui.notify(prompt.warning, "warning");
+  const prompt = instructionOnly
+    ? undefined
+    : resolveForemanPrompt({
+        cwd: ctx.cwd,
+        agentDir: getAgentDir(),
+        projectTrusted: ctx.isProjectTrusted(),
+      });
+  if (prompt?.warning && ctx.hasUI) ctx.ui.notify(prompt.warning, "warning");
 
   return createForemanRunner({
     model,
     thinking: settings.thinking ?? ctx.thinkingLevel,
     cwd: ctx.cwd,
     agentDir: getAgentDir(),
-    systemPrompt: prompt.prompt,
+    ...(prompt ? { systemPrompt: prompt.prompt } : {}),
+    instructionOnly,
   });
 }
 
@@ -192,6 +196,7 @@ async function createRunner(
     ...(settings.threshold === undefined
       ? {}
       : { thresholds: { workRemains: settings.threshold } }),
+    instructionRunner: await createModelRunner(ctx, settings, true),
     onDecision: (verdict, decision, instruction) =>
       log({ cwd: ctx.cwd, verdict, decision, instruction }),
     ...(modelRunner === undefined ? {} : { fallback: modelRunner }),

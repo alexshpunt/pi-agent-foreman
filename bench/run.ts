@@ -89,7 +89,7 @@ function parseArgs(argv: string[]): Options {
             "  --group a,b         lazy, legit, target",
             "  --case id,...       selected cases only",
             "  --threshold 0.5     minimum probability that required work is unfinished",
-            "  --gate 0.5          threshold for the four signals that keep a stop",
+            "  --gate 0.5          threshold for signals that keep a stop",
             "  --model jev-latest  TypeSafe model",
           ].join("\n"),
         );
@@ -183,8 +183,6 @@ const header = [
   "remains",
   "defers",
   ...LEGITIMATE_STOP_REASONS.map((reason) => gateLabel(reason.id)),
-  "kind".padEnd(14),
-  "lang",
 ].join(" ");
 console.log(`\n${header}`);
 console.log("-".repeat(header.length));
@@ -203,8 +201,6 @@ for (const result of results) {
       ...LEGITIMATE_STOP_REASONS.map((reason) =>
         (verdict.gates[reason.id] ?? 0).toFixed(2).padEnd(4),
       ),
-      verdict.remainingKind.padEnd(14),
-      verdict.language,
     ].join(" "),
   );
 }
@@ -221,7 +217,7 @@ if (failures.length > 0) {
     console.log(`    why it should be ${failure.testCase.expect}: ${failure.testCase.why}`);
     console.log(`    rule said: ${sample.reason}`);
     console.log(
-      `    numbers: remains ${sample.verdict.workRemains.toFixed(2)} · defers ${sample.verdict.defersWork.toFixed(2)} · ${LEGITIMATE_STOP_REASONS.map((reason) => `${reason.id} ${(sample.verdict.gates[reason.id] ?? 0).toFixed(2)}`).join(" · ")} · language ${sample.verdict.language}`,
+      `    numbers: remains ${sample.verdict.workRemains.toFixed(2)} · defers ${sample.verdict.defersWork.toFixed(2)} · ${LEGITIMATE_STOP_REASONS.map((reason) => `${reason.id} ${(sample.verdict.gates[reason.id] ?? 0).toFixed(2)}`).join(" · ")}`,
     );
   }
 }

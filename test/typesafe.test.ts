@@ -4,7 +4,6 @@ import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { LEGITIMATE_STOP_REASONS } from "../src/policy.ts";
 import {
-  buildInstruction,
   createTypeSafeJudge,
   createTypeSafeRunner,
   decideStop,
@@ -22,8 +21,6 @@ const verdict = (overrides: Partial<StopVerdict> = {}): StopVerdict => ({
   workRemains: 0.9,
   defersWork: 0.8,
   gates: gates({ waiting_on_background: 0.1 }),
-  remainingKind: "tests",
-  language: "en",
   ...overrides,
 });
 
@@ -51,6 +48,18 @@ describe("decideStop", () => {
     },
   );
 
+  it("keeps a completed diagnosis despite an optional deeper investigation", () => {
+    const decision = decideStop(
+      verdict({
+        workRemains: 0.81,
+        defersWork: 0.69,
+        gates: gates({ answered_diagnosis: 0.9 }),
+      }),
+    );
+    expect(decision.continueWork).toBe(false);
+    expect(decision.reason).toContain("answered_diagnosis");
+  });
+
   it("keeps a stop when a gate sits just above the gate threshold", () => {
     expect(decideStop(verdict({ gates: gates({ user_asked_to_stop: 0.5 }) })).continueWork).toBe(
       false,
@@ -73,49 +82,51 @@ describe("decideStop", () => {
   });
 });
 
-describe("buildInstruction", () => {
-  it("returns a usable instruction for every kind of unfinished work", () => {
-    const kinds = ["implementation", "tests", "verification", "documentation", "cleanup", "other"];
-    const instructions = kinds.map((kind) => buildInstruction(verdict({ remainingKind: kind })));
-    for (const instruction of instructions) expect(instruction.length).toBeGreaterThan(20);
-    expect(new Set(instructions).size).toBeGreaterThan(1);
-  });
-
-  it("writes the instruction in the language the judge reported", () => {
-    const english = buildInstruction(verdict({ language: "en" }));
-    const russian = buildInstruction(verdict({ language: "ru" }));
-    expect(russian).not.toBe(english);
-    expect(russian).toMatch(/[а-яА-Я]/);
-    expect(english).not.toMatch(/[а-яА-Я]/);
-  });
-
-  it("falls back to English for a language it has no words for", () => {
-    expect(buildInstruction(verdict({ language: "de" }))).toBe(
-      buildInstruction(verdict({ language: "en" })),
-    );
-  });
-
-  it("falls back to a generic instruction for an unknown kind", () => {
-    expect(buildInstruction(verdict({ remainingKind: "something-new" }))).toBe(
-      buildInstruction(verdict({ remainingKind: "other" })),
-    );
-  });
-});
-
 describe("createTypeSafeRunner", () => {
-  it("asks about the settled request and returns the instruction", async () => {
-    const judge = vi.fn(async () => verdict({ remainingKind: "verification" }));
-    const runner = createTypeSafeRunner({ judge });
+  it("asks about the settled request and returns the generated instruction", async () => {
+    const judge = vi.fn(async () => verdict());
+    const instructionRunner = { run: vi.fn(async () => "Run the unfinished test suite now.") };
+    const runner = createTypeSafeRunner({ judge, instructionRunner });
 
-    const instruction = await runner.run(
-      "Finish the task.",
-      "[assistant] I did not run the tests.",
-    );
-    expect(instruction).toBe(buildInstruction(verdict({ remainingKind: "verification" })));
+    await expect(
+      runner.run("Finish the task.", "[assistant] I did not run the tests."),
+    ).resolves.toBe("Run the unfinished test suite now.");
     expect(judge).toHaveBeenCalledWith({
       request: "Finish the task.",
       activity: "[assistant] I did not run the tests.",
     });
+    expect(instructionRunner.run).toHaveBeenCalledWith(
+      "Finish the task.",
+      "[assistant] I did not run the tests.",
+      undefined,
+    );
+  });
+
+  it("does not generate when TypeSafe declines continuation", async () => {
+    const instructionRunner = { run: vi.fn(async () => "do it") };
+    const runner = createTypeSafeRunner({
+      judge: async () => verdict({ workRemains: 0.1 }),
+      instructionRunner,
+    });
+    await expect(runner.run("Task.", "Done.")).resolves.toBeUndefined();
+    expect(instructionRunner.run).not.toHaveBeenCalled();
+  });
+
+  it.each(["empty", "error"])("does not continue on %s generation", async (failure) => {
+    const instructionRunner = {
+      run: vi.fn(async () => {
+        if (failure === "error") throw new Error("provider down");
+        return undefined;
+      }),
+    };
+    const fallback = { run: vi.fn(async () => "fallback") };
+    const runner = createTypeSafeRunner({
+      judge: async () => verdict(),
+      instructionRunner,
+      fallback,
+    });
+    await expect(runner.run("Task.", "unfinished")).resolves.toBeUndefined();
+    expect(fallback.run).not.toHaveBeenCalled();
   });
 
   it("returns nothing when a gate keeps the stop", async () => {
@@ -125,6 +136,27 @@ describe("createTypeSafeRunner", () => {
     await expect(runner.run("Pick one.", "[assistant] Which option?")).resolves.toBeUndefined();
   });
 
+  it("stops after answering a plan-only request but continues when implementation was requested", async () => {
+    const activity =
+      "[assistant] Plan: build a snapshot, load it in app.mjs, and publish it in the workflow.";
+    const instructionRunner = { run: vi.fn(async () => "Implement the snapshot now.") };
+    const judge = vi
+      .fn()
+      .mockResolvedValueOnce(verdict({ gates: gates({ requested_plan: 0.9 }) }))
+      .mockResolvedValueOnce(verdict({ gates: gates({ requested_plan: 0.1 }) }));
+    const runner = createTypeSafeRunner({ judge, instructionRunner });
+
+    await expect(
+      runner.run("What is the plan, and where will changes be needed?", activity),
+    ).resolves.toBeUndefined();
+    expect(instructionRunner.run).not.toHaveBeenCalled();
+
+    await expect(
+      runner.run("Start implementing the snapshot now and outline the plan.", activity),
+    ).resolves.toBe("Implement the snapshot now.");
+    expect(instructionRunner.run).toHaveBeenCalledTimes(1);
+    expect(judge).toHaveBeenCalledTimes(2);
+  });
   it("does not call the judge when the run was already aborted", async () => {
     const judge = vi.fn(async () => verdict());
     const runner = createTypeSafeRunner({ judge });
@@ -143,6 +175,23 @@ describe("createTypeSafeRunner", () => {
     await expect(runner.run("Task.", "activity", controller.signal)).resolves.toBeUndefined();
   });
 
+  it("drops a generated instruction when the run is aborted during generation", async () => {
+    const controller = new AbortController();
+    const instructionRunner = {
+      run: vi.fn(async () => {
+        controller.abort();
+        return "Run the tests now.";
+      }),
+    };
+    const onDecision = vi.fn();
+    const runner = createTypeSafeRunner({
+      judge: async () => verdict(),
+      instructionRunner,
+      onDecision,
+    });
+    await expect(runner.run("Task.", "unfinished", controller.signal)).resolves.toBeUndefined();
+    expect(onDecision).not.toHaveBeenCalled();
+  });
   it("hands the run to the fallback when the judge fails", async () => {
     const fallback = { run: vi.fn(async () => "from the fallback") };
     const onFallback = vi.fn();
@@ -173,7 +222,12 @@ describe("createTypeSafeRunner", () => {
 
   it("reports the verdict and the decision for every run", async () => {
     const onDecision = vi.fn();
-    const runner = createTypeSafeRunner({ judge: async () => verdict(), onDecision });
+    const instructionRunner = { run: vi.fn(async () => "Finish the pending work.") };
+    const runner = createTypeSafeRunner({
+      judge: async () => verdict(),
+      instructionRunner,
+      onDecision,
+    });
     const instruction = await runner.run("Finish the task.", "[assistant] Starting now.");
     expect(onDecision).toHaveBeenCalledTimes(1);
     expect(onDecision).toHaveBeenCalledWith(

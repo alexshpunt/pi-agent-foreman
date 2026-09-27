@@ -78,10 +78,10 @@ There are two ways to judge a settled run.
 **The model judge** asks a nested model to call a `veto` tool. It writes the instruction it
 sends back, in the language of the assistant message.
 
-**The TypeSafe judge** asks a TypeSafe System One model for probabilities instead and decides
-in code: one request, one answer per question, no tool call and no generated prose. The
-instruction is built from the answer, so it does not name the unfinished work in detail; the
-agent still has the turn in its context.
+**The TypeSafe judge** asks a TypeSafe System One model for probabilities and decides
+in code whether work remains. When it says to continue, a nested Pi model writes a specific
+instruction from the request and activity. If that model cannot write one, the agent is not
+sent back to work.
 
 `agentForeman.judge` selects one:
 
@@ -122,9 +122,12 @@ The environment wins. The `/agent-foreman` menu shows which of the two the judge
 ```
 
 One request asks about the settled exchange: whether required work is still unfinished, whether
-the agent put it off, the four reasons a stop can be legitimate, what kind of work is left, and
-which language the request is in. `threshold` is the minimum probability that required work is
-unfinished. The instruction goes back in the language of the request.
+the agent put it off, and the reasons a stop can be legitimate. `threshold` is the
+minimum probability that required work is unfinished. The nested model writes the instruction
+in the language of the assistant message.
+
+If the user asked for a cause, a concrete explanation completes that request. Mentioning an
+unasked deeper question does not mean the agent must continue.
 
 Both judges follow the same policy, written once in `src/policy.ts`: the model judge reads it
 as prose, the TypeSafe judge asks about it as typed questions, so the two cannot drift apart on

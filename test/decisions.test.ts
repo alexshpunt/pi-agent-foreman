@@ -10,8 +10,6 @@ const verdict: StopVerdict = {
   workRemains: 0.9,
   defersWork: 0.8,
   gates: Object.fromEntries(LEGITIMATE_STOP_REASONS.map((reason) => [reason.id, 0.05])),
-  remainingKind: "tests",
-  language: "en",
 };
 const decision: StopDecision = { continueWork: true, probability: 0.9, reason: "unfinished" };
 

@@ -36,6 +36,36 @@ describe("foreman runner", () => {
     expect(options.resourceLoader.getSystemPrompt()).toBe("custom foreman prompt");
   });
 
+  it("uses an instruction tool without asking the model to judge again", async () => {
+    let options: any;
+    const createSession = vi.fn(async (value: any) => {
+      options = value;
+      return {
+        session: {
+          prompt: vi.fn(async () => {
+            await options.customTools[0].execute("id", {
+              remainingWork: "Tests have not run.",
+              instruction: "Run the tests you left unfinished now.",
+            });
+          }),
+          abort: vi.fn(),
+          dispose: vi.fn(),
+        },
+      };
+    });
+    const runner = createForemanRunner({
+      model: { provider: "p", id: "m" },
+      cwd: "/tmp",
+      agentDir: "/tmp",
+      instructionOnly: true,
+      createSession,
+    });
+    await expect(runner.run("Test the change.", "[assistant] I skipped the tests.")).resolves.toBe(
+      "Run the tests you left unfinished now.",
+    );
+    expect(options.tools).toEqual(["instruct"]);
+  });
+
   it("returns nothing when the model does not call veto", async () => {
     const createSession = vi.fn(async () => ({
       session: { prompt: vi.fn(), abort: vi.fn(), dispose: vi.fn() },

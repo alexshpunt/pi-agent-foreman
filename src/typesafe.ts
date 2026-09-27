@@ -1,11 +1,6 @@
 import { readStoredCredential } from "@earendil-works/pi-coding-agent";
 import { TypeSafeClient } from "@typesafe-ai/sdk";
-import {
-  INSTRUCTION_LANGUAGES,
-  type InstructionLanguage,
-  LEGITIMATE_STOP_REASONS,
-  STOP_SIGNALS,
-} from "./policy.ts";
+import { LEGITIMATE_STOP_REASONS, STOP_SIGNALS } from "./policy.ts";
 import type { ForemanRunner } from "./runner.ts";
 
 /**
@@ -15,42 +10,11 @@ import type { ForemanRunner } from "./runner.ts";
  * One model for probabilities instead, and the decision lives in code: one request, one
  * answer per question, no generated prose and no tool call.
  *
- * The questions come from the shared policy, so the four reasons a stop can be legitimate are
+ * The questions come from the shared policy, so the reasons a stop can be legitimate are
  * worded once for both judges.
  */
 
-/** The kind question and the language question are the two the policy does not define. */
-const EXTRA_QUESTIONS = {
-  remaining_kind: {
-    type: "choice" as const,
-    instructions:
-      "Which kind of work is still unfinished? Choose 'none' when nothing required is left.",
-    criteria: {
-      implementation: "Writing or changing the code itself.",
-      tests: "Writing tests that were asked for.",
-      verification: "Running checks that show the change works.",
-      documentation: "Writing or updating the requested documentation.",
-      cleanup: "Removing, reverting, or tidying something that was left behind.",
-      other: "Work that fits none of the other options.",
-      none: "Nothing required is unfinished.",
-    },
-  },
-  answer_language: {
-    type: "choice" as const,
-    instructions:
-      "Which language is the request written in? Answer for the human request, not for code or tool output.",
-    criteria: {
-      en: "English.",
-      ru: "Russian.",
-      other: "Some other language, or the request mixes languages without one clear one.",
-    },
-  },
-};
-
-/**
- * Questions for one settled exchange. Every question asks about something visible in the
- * supplied activity, and each one is independent, so a single request answers all of them.
- */
+/** Independent questions about the settled exchange, answered in one request. */
 export const STOP_QUESTIONS = {
   work_remains: {
     type: "noul" as const,
@@ -75,18 +39,14 @@ export const STOP_QUESTIONS = {
       },
     ]),
   ),
-  ...EXTRA_QUESTIONS,
 };
 
-/** The probabilities and the labels from one judge request. */
+/** Probabilities from one judge request. */
 export interface StopVerdict {
   workRemains: number;
   defersWork: number;
   /** Probability per legitimate reason, keyed by the id the shared policy gives it. */
   gates: Record<string, number>;
-  remainingKind: string;
-  /** Language of the request, as the judge read it. */
-  language: string;
 }
 
 export interface StopThresholds {
@@ -147,48 +107,6 @@ export function decideStop(
         ? `${decided}, and the message puts it off to later (${verdict.defersWork.toFixed(2)})`
         : decided,
   };
-}
-
-/** Phrase used for each kind of unfinished work, in the language of the request. */
-const KIND_PHRASES: Record<InstructionLanguage, Record<string, string>> = {
-  en: {
-    implementation: "finish the implementation",
-    tests: "write the tests that were asked for",
-    verification: "run the checks that prove the work is done",
-    documentation: "finish the documentation",
-    cleanup: "finish the cleanup that was left open",
-    other: "finish the work that is still open",
-    none: "finish the work that is still open",
-  },
-  ru: {
-    implementation: "доделай реализацию",
-    tests: "напиши тесты, которые просили",
-    verification: "прогони проверки, которые доказывают, что работа сделана",
-    documentation: "доделай документацию",
-    cleanup: "доделай уборку, которую оставил незакрытой",
-    other: "доделай работу, которая осталась открытой",
-    none: "доделай работу, которая осталась открытой",
-  },
-};
-
-const INSTRUCTION_TAILS: Record<InstructionLanguage, string> = {
-  en: "Do not describe what should happen next, do not hand the work back to the user, and do not report it as something to do later. Do the work and report the result.",
-  ru: "Не описывай, что должно быть дальше, не передавай работу пользователю и не сообщай об этом как о чём-то на потом. Сделай работу и доложи результат.",
-};
-
-/** Instruction sent back to the agent when its stop is not accepted. */
-export function buildInstruction(verdict: StopVerdict): string {
-  const language: InstructionLanguage = INSTRUCTION_LANGUAGES.includes(
-    verdict.language as InstructionLanguage,
-  )
-    ? (verdict.language as InstructionLanguage)
-    : "en";
-  const phrase = KIND_PHRASES[language][verdict.remainingKind] ?? KIND_PHRASES[language].other;
-  const head =
-    language === "ru"
-      ? `Продолжи этот ход и ${phrase} сейчас.`
-      : `Continue this turn and ${phrase} now.`;
-  return `${head} ${INSTRUCTION_TAILS[language]}`;
 }
 
 /**
@@ -266,15 +184,13 @@ export function createTypeSafeJudge(options: TypeSafeJudgeOptions = {}): StopJud
       questions: STOP_QUESTIONS,
       ...(options.model ? { model: options.model } : {}),
     });
-    const answers = result.answers as Record<string, { noul?: number; choice?: string }>;
+    const answers = result.answers as Record<string, { noul?: number }>;
     return {
       workRemains: answers.work_remains?.noul ?? 0,
       defersWork: answers.defers_work?.noul ?? 0,
       gates: Object.fromEntries(
         LEGITIMATE_STOP_REASONS.map((reason) => [reason.id, answers[reason.id]?.noul ?? 0]),
       ),
-      remainingKind: answers.remaining_kind?.choice ?? "other",
-      language: answers.answer_language?.choice ?? "en",
     };
   };
 }
@@ -285,6 +201,8 @@ export interface TypeSafeRunnerOptions {
   thresholds?: Partial<StopThresholds>;
   /** TypeSafe model override, for example jev-latest. */
   model?: string;
+  /** Generates a specific instruction only after TypeSafe decides to continue. */
+  instructionRunner?: ForemanRunner;
   /** Called once per decision, with the instruction the agent will receive if there is one. */
   onDecision?: (verdict: StopVerdict, decision: StopDecision, instruction?: string) => void;
   /** Used when the judge cannot answer at all, so a missing service does not disable review. */
@@ -316,7 +234,15 @@ export function createTypeSafeRunner(options: TypeSafeRunnerOptions = {}): Forem
 
       if (signal?.aborted) return undefined;
       const decision = decideStop(verdict, thresholds);
-      const instruction = decision.continueWork ? buildInstruction(verdict) : undefined;
+      let instruction: string | undefined;
+      if (decision.continueWork && options.instructionRunner) {
+        try {
+          instruction = await options.instructionRunner.run(lastUserMessage, agentActivity, signal);
+        } catch {
+          // A failed generator does not override TypeSafe or send a generic instruction.
+        }
+      }
+      if (signal?.aborted) return undefined;
       options.onDecision?.(verdict, decision, instruction);
       return instruction;
     },

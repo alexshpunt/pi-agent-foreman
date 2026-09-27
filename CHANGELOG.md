@@ -2,6 +2,17 @@
 
 Releases before 0.5.0 are described in the [GitHub releases](https://github.com/alexshpunt/pi-agent-foreman/releases).
 
+## 0.5.3 — 2026-09-27
+
+### Fixed
+
+- Stop sending the agent back after it answers a request for a cause, even if it mentions deeper investigation the user did not ask for.
+- Keep completed plan-only requests from being treated as unfinished implementation work.
+
+### Changed
+
+- When TypeSafe decides that work remains, a nested model now writes a specific instruction instead of using the same stock message. If it cannot write one, the agent is not sent back.
+
 ## 0.5.2
 
 ### Changed

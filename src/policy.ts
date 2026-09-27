@@ -2,7 +2,7 @@
  * The stop policy both judges share.
  *
  * The model judge reads it as prose, the TypeSafe judge reads it as typed questions. Keeping
- * the four reasons in one place is the point: a rule changed here changes both, so the two
+ * the stop reasons in one place is the point: a rule changed here changes both, so the two
  * judges cannot drift apart on what counts as a legitimate stop.
  */
 
@@ -21,7 +21,7 @@ export interface StopReason {
   notCounted?: string;
 }
 
-/** The four judgments that make a stop legitimate. High probability on any one keeps it. */
+/** Legitimate reasons to stop. High probability on any one keeps it. */
 export const LEGITIMATE_STOP_REASONS: StopReason[] = [
   {
     id: "waiting_on_background",
@@ -37,12 +37,28 @@ export const LEGITIMATE_STOP_REASONS: StopReason[] = [
     rule: "The user asked for the work to stop, to wait, or to be left as it is.",
   },
   {
+    id: "requested_plan",
+    question:
+      "Did the user ask only for a plan, explanation, or list of places to change, rather than asking the agent to implement the change now?",
+    rule: "The user asked for an answer about proposed work, and the agent supplied that answer without being asked to implement it.",
+    notCounted:
+      "A request to make the change now is not a plan-only request, even if it also asks for a plan.",
+  },
+  {
     id: "presented_choice",
     question:
       "Does the final assistant message spell out two or more concrete alternatives and ask the user to pick one of them?",
     rule: "The message lists options and asks the user to choose between them before the work can continue.",
     notCounted:
       "Asking whether to continue, or asking for permission to carry on with the request, is not a choice between alternatives.",
+  },
+  {
+    id: "answered_diagnosis",
+    question:
+      "Did the user ask to find or explain a cause, and did the final assistant message give a concrete explanation of the requested behavior, with only unrequested deeper investigation left?",
+    rule: "The requested cause is explained using the available evidence. Mentioning that a different, deeper question needs more information does not leave the original request unfinished.",
+    notCounted:
+      "Merely repeating the symptom, promising to investigate the requested cause later, or saying the cause is unknown does not count as an answer.",
   },
   {
     id: "blocked_by_limitation",
@@ -70,10 +86,6 @@ export const STOP_SIGNALS = {
       "It claims the work is done, or it reports a legitimate outcome that leaves no work behind.",
   },
 } as const;
-
-/** Language the instruction should be written in, as reported by the judge. */
-export const INSTRUCTION_LANGUAGES = ["en", "ru"] as const;
-export type InstructionLanguage = (typeof INSTRUCTION_LANGUAGES)[number];
 
 const shouldBeChecked = new Set([
   ...LEGITIMATE_STOP_REASONS.map((reason) => reason.id),
