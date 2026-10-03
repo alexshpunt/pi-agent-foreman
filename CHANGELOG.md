@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.5.7 — 2026-10-03
+
+### Fixed
+
+- Recognize next-action announcements inside completed-work reports, including statements without a first-person verb.
+- Continue explicitly unfinished work even when the agent makes no new promise.
+- Check blockers, permission requests, postponement, and explicit stops separately before continuing.
+
+### Changed
+
+- Ask six English questions in one classifier request and show every score in decision details.
+- Use a default positive threshold of 0.5. Blocking signals always veto at 0.5.
+- Let the instruction writer identify announced or unfinished work while respecting restrictions in context.
+
 ## 0.5.6 — 2026-10-03
 
 ### Fixed

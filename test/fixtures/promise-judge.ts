@@ -1,6 +1,7 @@
 import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { type ExtensionAPI, getAgentDir } from "@earendil-works/pi-coding-agent";
+import { signals } from "../signals.ts";
 
 /** Stub the external endpoints while Pi's loader, nested writer and continuation stay real. */
 export default function promiseJudge(pi: ExtensionAPI) {
@@ -29,9 +30,18 @@ export default function promiseJudge(pi: ExtensionAPI) {
       const body = JSON.parse(String(init?.body)) as { state: { reply: string } };
       appendFileSync(join(process.cwd(), "judge-inputs.jsonl"), `${JSON.stringify(body.state)}\n`);
       appendFileSync(join(process.cwd(), "judge-requests.jsonl"), `${JSON.stringify(body)}\n`);
-      const promise = body.state.reply === "Continuing the run." ? 0.95 : 0.05;
+      const verdict =
+        body.state.reply === "The run is complete."
+          ? signals()
+          : process.env.FOREMAN_TEST_SIGNALS
+            ? signals(JSON.parse(process.env.FOREMAN_TEST_SIGNALS))
+            : signals({ plannedAction: body.state.reply === "Continuing the run." ? 0.95 : 0.05 });
       return new Response(
-        JSON.stringify({ answers: { promise: { type: "noul", noul: promise } } }),
+        JSON.stringify({
+          answers: Object.fromEntries(
+            Object.entries(verdict).map(([key, noul]) => [key, { type: "noul", noul }]),
+          ),
+        }),
         {
           headers: { "content-type": "application/json" },
         },
@@ -50,8 +60,9 @@ export default function promiseJudge(pi: ExtensionAPI) {
                 function: {
                   name: "instruct",
                   arguments: JSON.stringify({
-                    promisedAction: "Start the promised run.",
-                    instruction: "Start the promised run now.",
+                    action: "Carry out the identified work.",
+                    instruction:
+                      process.env.FOREMAN_TEST_INSTRUCTION ?? "Start the promised run now.",
                   }),
                 },
               },
@@ -78,7 +89,7 @@ export default function promiseJudge(pi: ExtensionAPI) {
     const root = JSON.parse(readFileSync(path, "utf8"));
     root.agentForeman = {
       enabled: true,
-      threshold: 0.7,
+      threshold: 0.5,
       model: "writer/writer",
       thinking: "off",
       classifier: process.env.FOREMAN_TEST_CLASSIFIER ?? "typesafe/jev-latest",

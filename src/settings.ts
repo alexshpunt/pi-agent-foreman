@@ -11,7 +11,7 @@ export interface ForemanSettings {
   /** Pi classifier provider/model reference, separate from the instruction writer. */
   classifier?: string;
   thinking?: ForemanThinkingLevel;
-  /** Minimum probability of an immediate promise in the final reply. */
+  /** Minimum probability of an announced next action or explicit unfinished work. */
   threshold?: number;
 }
 

@@ -7,11 +7,14 @@ import {
 } from "@earendil-works/pi-coding-agent";
 import { Box, Markdown, Text } from "@earendil-works/pi-tui";
 import {
+  BLOCK_THRESHOLD,
   createClassifierJudge,
   createClassifierRunner,
   DEFAULT_CLASSIFIER,
   DEFAULT_THRESHOLD,
+  SIGNAL_LABELS,
   type StopDecision,
+  type StopVerdict,
 } from "./classifier.ts";
 import { createDecisionLog } from "./decisions.ts";
 import type { ModelLike } from "./models.ts";
@@ -41,7 +44,7 @@ export function decisionText(details: DecisionDetails, expanded: boolean): strin
   const summary = details.instruction
     ? "⛑ Foreman sent the agent back to work"
     : details.decision.continueWork
-      ? "⛑ Foreman detected a promise, but no continuation instruction was produced"
+      ? "⛑ Foreman found further work, but no continuation instruction was produced"
       : "⛑ Foreman decided not to intervene";
   if (!expanded) return `${summary} · Ctrl+O for full decision details`;
   const fence = "`".repeat(
@@ -51,8 +54,11 @@ export function decisionText(details: DecisionDetails, expanded: boolean): strin
     `## ${summary}`,
     "",
     `- **Decision:** ${details.decision.continueWork ? "continue work" : "do not intervene"}`,
-    `- **Promise probability:** ${details.decision.probability}`,
-    `- **Threshold:** ${details.threshold}`,
+    ...Object.entries(details.decision.signals ?? {}).map(
+      ([key, probability]) => `- **${SIGNAL_LABELS[key as keyof StopVerdict]}:** ${probability}`,
+    ),
+    `- **Action threshold:** ${details.threshold}`,
+    `- **Blocking threshold:** ${BLOCK_THRESHOLD}`,
     ...(details.classifier ? [`- **Classifier:** ${details.classifier}`] : []),
     `- **Reason:** ${details.decision.reason}`,
     "",
