@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { decideStop } from "../src/classifier.ts";
 import { type DecisionDetails, decisionText } from "../src/index.ts";
-import { decideStop } from "../src/typesafe.ts";
 
 const details: DecisionDetails = {
   user: "request-unique",

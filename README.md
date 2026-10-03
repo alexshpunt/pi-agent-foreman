@@ -15,8 +15,8 @@ Your agent says "Continuing the run" and ends its turn.
 
 **Foreman sends it back to do what it promised.**
 
-Pi Agent Foreman asks TypeSafe (jev) whether the **final assistant reply** promises an
-immediate action. A confident promise triggers a separate Pi agent that writes a specific
+Pi Agent Foreman uses Pi’s classifier runtime to check whether the **final assistant reply** promises an
+immediate action. The default classifier is `typesafe/jev-latest`; you can choose another available classifier in Pi. A confident promise triggers a separate Pi agent that writes a specific
 instruction. No promise means no intervention, even if earlier work is unfinished.
 
 ## Install
@@ -25,12 +25,12 @@ instruction. No promise means no intervention, even if earlier work is unfinishe
 pi install npm:pi-agent-foreman
 ```
 
-Requires Pi 0.83 or newer. Foreman uses the Node.js runtime bundled with your Pi
+Requires Pi 1.0.0 or newer. Foreman uses the Node.js runtime bundled with your Pi
 installation.
 
 ## Cost and privacy
 
-When enabled, Foreman sends only the final assistant reply to TypeSafe after each settled
+When enabled, Foreman sends only the final assistant reply to the selected classifier after each settled
 run. It does not send the user request, tool output, earlier replies, or private thinking
 to the judge.
 
@@ -54,7 +54,8 @@ The menu lets you:
 
 - turn **Back to Work** on or off;
 - choose the model that writes instructions from those already available in Pi;
-- choose its reasoning level.
+- choose its reasoning level;
+- choose the classifier from providers configured in Pi.
 
 Back to Work is on by default. Until you choose a dedicated foreman, it uses the current session model and reasoning level. Choosing a model automatically enables the mode.
 
@@ -65,6 +66,7 @@ The selection is stored globally in Pi's `settings.json`:
   "agentForeman": {
     "enabled": true,
     "model": "openai-codex/gpt-5.6-luna",
+    "classifier": "typesafe/jev-latest",
     "thinking": "low"
   }
 }
@@ -74,17 +76,13 @@ You do not need to edit this file yourself.
 
 ## How it decides
 
-Foreman requires a TypeSafe key. Set `TYPESAFE_API_KEY` in the Pi process, or add the key
-to Pi's auth file under `"typesafe"`:
+Foreman requires Pi 1.0.0 or newer. Pi handles classifier discovery and credentials.
+Choose an available classifier in `/agent-foreman`; the default is `typesafe/jev-latest`.
+For this default, set `TYPESAFE_API_KEY` or configure the TypeSafe provider in Pi.
+Other classifier providers use their normal Pi authentication.
 
-```json
-{
-  "typesafe": { "type": "api_key", "key": "..." }
-}
-```
-
-The environment wins. The menu shows where the key comes from. Without a key, or if jev
-cannot answer, Foreman stays quiet and shows a warning instead of using another judge.
+If the selected classifier is missing, unavailable, or returns an invalid answer,
+Foreman stays quiet and shows a warning. It does not silently switch providers.
 
 Jev answers one question: does the final reply promise a concrete action **now or next**?
 "Continuing the run" counts. Confidence, completed-work reports, optional ideas, later

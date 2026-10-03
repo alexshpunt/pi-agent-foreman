@@ -1,11 +1,11 @@
-import { readStoredCredential } from "@earendil-works/pi-coding-agent";
-import { TypeSafeClient } from "@typesafe-ai/sdk";
+import type { ClassifierApi, ClassifierModel } from "@earendil-works/pi-ai";
+import type { ModelRegistry } from "@earendil-works/pi-coding-agent";
 import type { ForemanRunner } from "./runner.ts";
 
 /** Jev classifies only the final reply, not task completion. */
 export const PROMISE_QUESTIONS = {
   promise: {
-    type: "noul" as const,
+    type: "bool" as const,
     instructions:
       "Does the reply make an affirmative commitment to a new action by the assistant NOW or NEXT? Read the meaning, not keywords. 'I will not continue' is a refusal, not a commitment. A session continuing automatically after reload is not a new action by the assistant. First exclude negated or quoted promises, conditional or later work, and reports of automatic continuation. Then check for an affirmative immediate action. 'Continuing the run' and 'Продолжаю запуск' are affirmative commitments. Confidence and unfinished tasks alone do not count.",
     criteria: {
@@ -50,69 +50,54 @@ export type StopReviewState = {
   reply: string;
 };
 
-/** Provider id the key is stored under in Pi's auth file. */
-export const TYPESAFE_PROVIDER_ID = "typesafe";
+/** Default classifier; callers can select any classifier in the Pi catalog. */
+export const DEFAULT_CLASSIFIER = "typesafe/jev-latest";
 
-export interface ResolvedTypeSafeKey {
-  key: string;
-  /** Where the key came from, for the settings menu and warnings. */
-  source: "environment" | "auth.json";
-}
+export type StopJudge = (state: StopReviewState, signal?: AbortSignal) => Promise<StopVerdict>;
 
-/** Find the TypeSafe key in the environment or Pi's credential store. */
-export function resolveTypeSafeKey(authPath?: string): ResolvedTypeSafeKey | undefined {
-  const fromEnvironment = process.env.TYPESAFE_API_KEY?.trim();
-  if (fromEnvironment) return { key: fromEnvironment, source: "environment" };
-
-  const stored = readStoredCredential(TYPESAFE_PROVIDER_ID, authPath) as
-    | { type?: unknown; key?: unknown }
-    | undefined;
-  const key = stored?.type === "api_key" && typeof stored.key === "string" ? stored.key.trim() : "";
-  return key ? { key, source: "auth.json" } : undefined;
-}
-
-/** Thrown when the judge has no TypeSafe key. */
-export class TypeSafeNotConfiguredError extends Error {
-  constructor() {
-    super(
-      'Set TYPESAFE_API_KEY, or store the key in Pi\'s auth file under "typesafe" as { "type": "api_key", "key": "..." }.',
+/** Review a reply through Pi, using its catalog and request-time credentials. */
+export function createClassifierJudge(
+  registry: Pick<ModelRegistry, "classify"> & {
+    findOfType(
+      type: "classifier",
+      provider: string,
+      id: string,
+    ): ClassifierModel<ClassifierApi> | undefined;
+  },
+  reference: string = DEFAULT_CLASSIFIER,
+): StopJudge {
+  return async (state, signal) => {
+    const slash = reference.indexOf("/");
+    const model = registry.findOfType(
+      "classifier",
+      reference.slice(0, slash),
+      reference.slice(slash + 1),
     );
-    this.name = "TypeSafeNotConfiguredError";
-  }
-}
-
-export type StopJudge = (state: StopReviewState) => Promise<StopVerdict>;
-
-export interface TypeSafeJudgeOptions {
-  /** TypeSafe model override, for example jev-latest. */
-  model?: string;
-  /** Key lookup, so tests can run without a real credential. */
-  resolveKey?: () => ResolvedTypeSafeKey | undefined;
-}
-
-/** Ask jev whether the final reply promises an immediate action. */
-export function createTypeSafeJudge(options: TypeSafeJudgeOptions = {}): StopJudge {
-  const resolveKey = options.resolveKey ?? resolveTypeSafeKey;
-  return async (state) => {
-    const resolved = resolveKey();
-    if (!resolved) throw new TypeSafeNotConfiguredError();
-    const client = new TypeSafeClient({ apiKey: resolved.key });
-    const result = await client.systemOne({
-      state,
-      questions: PROMISE_QUESTIONS,
-      ...(options.model ? { model: options.model } : {}),
-    });
-    const answers = result.answers as Record<string, { noul?: number }>;
-    return { promise: answers.promise?.noul ?? 0 };
+    if (slash < 1 || !model) throw new Error(`Classifier not found: ${reference}`);
+    const result = await registry.classify(
+      model,
+      { state, questions: PROMISE_QUESTIONS },
+      { signal },
+    );
+    if (result.stopReason !== "stop")
+      throw new Error(result.errorMessage ?? `Classifier ${result.stopReason}`);
+    const answer = result.answers.promise;
+    if (
+      answer?.type !== "bool" ||
+      !Number.isFinite(answer.probability) ||
+      answer.probability < 0 ||
+      answer.probability > 1
+    ) {
+      throw new Error("Classifier returned an invalid promise probability");
+    }
+    return { promise: answer.probability };
   };
 }
 
-export interface TypeSafeRunnerOptions {
-  /** Replaced in tests; the default talks to TypeSafe. */
-  judge?: StopJudge;
+export interface ClassifierRunnerOptions {
+  /** Classifies the last reply through Pi. */
+  judge: StopJudge;
   threshold?: number;
-  /** TypeSafe model override, for example jev-latest. */
-  model?: string;
   /** Writes an instruction only after jev detects an immediate promise. */
   instructionRunner?: ForemanRunner;
   /** Called once for each successful judgment. */
@@ -122,10 +107,8 @@ export interface TypeSafeRunnerOptions {
 }
 
 /** A foreman runner that stays quiet on uncertainty or a failed jev request. */
-export function createTypeSafeRunner(options: TypeSafeRunnerOptions = {}): ForemanRunner {
-  const judge =
-    options.judge ??
-    createTypeSafeJudge(options.model === undefined ? {} : { model: options.model });
+export function createClassifierRunner(options: ClassifierRunnerOptions): ForemanRunner {
+  const judge = options.judge;
 
   return {
     async run(lastUserMessage, agentActivity, finalReply, signal) {
@@ -133,7 +116,7 @@ export function createTypeSafeRunner(options: TypeSafeRunnerOptions = {}): Forem
 
       let verdict: StopVerdict;
       try {
-        verdict = await judge({ reply: finalReply });
+        verdict = await judge({ reply: finalReply }, signal);
       } catch (error) {
         if (!signal?.aborted) {
           options.onUnavailable?.(error instanceof Error ? error : new Error(String(error)));

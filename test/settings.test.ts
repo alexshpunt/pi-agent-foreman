@@ -2,6 +2,15 @@ import { describe, expect, it } from "vitest";
 import { parseSettings } from "../src/settings.ts";
 
 describe("parseSettings", () => {
+  it("keeps classifier selection separate from the instruction model", () => {
+    expect(
+      parseSettings({ classifier: " openrouter/typesafe/jev-1.13 ", model: "p/writer" }),
+    ).toMatchObject({
+      classifier: "openrouter/typesafe/jev-1.13",
+      model: "p/writer",
+    });
+    expect(parseSettings({ classifier: 42 }).classifier).toBeUndefined();
+  });
   it("keeps only the enable toggle, selected model, and thinking level", () => {
     expect(
       parseSettings({

@@ -8,6 +8,8 @@ export type ForemanThinkingLevel = (typeof THINKING_LEVELS)[number];
 export interface ForemanSettings {
   enabled: boolean;
   model?: string;
+  /** Pi classifier provider/model reference, separate from the instruction writer. */
+  classifier?: string;
   thinking?: ForemanThinkingLevel;
   /** Minimum probability of an immediate promise in the final reply. */
   threshold?: number;
@@ -27,6 +29,7 @@ export function parseSettings(raw: unknown): ForemanSettings {
       ? (raw as Record<string, unknown>)
       : {};
   const model = typeof value.model === "string" ? value.model.trim() : "";
+  const classifier = typeof value.classifier === "string" ? value.classifier.trim() : "";
   const thinking = THINKING_LEVELS.find((level) => level === value.thinking);
   const threshold =
     typeof value.threshold === "number" &&
@@ -38,6 +41,7 @@ export function parseSettings(raw: unknown): ForemanSettings {
   return {
     enabled: booleanOr(value.enabled, true),
     model: model || undefined,
+    classifier: classifier || undefined,
     thinking,
     threshold,
   };

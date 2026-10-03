@@ -1,6 +1,6 @@
 import { appendFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
-import type { StopDecision, StopVerdict } from "./typesafe.ts";
+import type { StopDecision, StopVerdict } from "./classifier.ts";
 
 /**
  * One line per judge decision, so a decision can be read back later instead of replayed.

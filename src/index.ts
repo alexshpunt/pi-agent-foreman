@@ -6,6 +6,13 @@ import {
   SettingsManager,
 } from "@earendil-works/pi-coding-agent";
 import { Box, Markdown, Text } from "@earendil-works/pi-tui";
+import {
+  createClassifierJudge,
+  createClassifierRunner,
+  DEFAULT_CLASSIFIER,
+  DEFAULT_THRESHOLD,
+  type StopDecision,
+} from "./classifier.ts";
 import { createDecisionLog } from "./decisions.ts";
 import type { ModelLike } from "./models.ts";
 import { resolveForemanModel } from "./models.ts";
@@ -17,12 +24,6 @@ import {
   THINKING_LEVELS,
   writeGlobalForemanSettings,
 } from "./settings.ts";
-import {
-  createTypeSafeRunner,
-  DEFAULT_THRESHOLD,
-  resolveTypeSafeKey,
-  type StopDecision,
-} from "./typesafe.ts";
 
 const DECISION_ENTRY = "agent-foreman-decision";
 
@@ -30,6 +31,8 @@ const DECISION_ENTRY = "agent-foreman-decision";
 export interface DecisionDetails extends SettledExchange {
   decision: StopDecision;
   threshold: number;
+  /** Classifier used for this review. */
+  classifier?: string;
   instruction?: string;
 }
 
@@ -50,6 +53,7 @@ export function decisionText(details: DecisionDetails, expanded: boolean): strin
     `- **Decision:** ${details.decision.continueWork ? "continue work" : "do not intervene"}`,
     `- **Promise probability:** ${details.decision.probability}`,
     `- **Threshold:** ${details.threshold}`,
+    ...(details.classifier ? [`- **Classifier:** ${details.classifier}`] : []),
     `- **Reason:** ${details.decision.reason}`,
     "",
     "### Evaluated assistant reply",
@@ -228,7 +232,8 @@ function createRunner(
   onDecision: (decision: StopDecision, instruction?: string) => void,
 ): ForemanRunner {
   const log = createDecisionLog(getAgentDir());
-  return createTypeSafeRunner({
+  return createClassifierRunner({
+    judge: createClassifierJudge(ctx.modelRegistry, settings.classifier),
     threshold: settings.threshold,
     instructionRunner: createInstructionRunner(ctx, settings),
     onDecision: (verdict, decision, instruction) => {
@@ -297,7 +302,7 @@ export default function agentForeman(pi: ExtensionAPI) {
         (error) => {
           if (keyWarningShown || !ctx.hasUI) return;
           ctx.ui.notify(
-            `TypeSafe judge unavailable; Foreman stayed quiet: ${error.message}`,
+            `Classifier unavailable; Foreman stayed quiet: ${error.message}`,
             "warning",
           );
           keyWarningShown = true;
@@ -307,6 +312,7 @@ export default function agentForeman(pi: ExtensionAPI) {
           pi.appendEntry<DecisionDetails>(DECISION_ENTRY, {
             ...exchange,
             decision,
+            classifier: settings.classifier ?? DEFAULT_CLASSIFIER,
             threshold: settings.threshold ?? DEFAULT_THRESHOLD,
             ...(instruction ? { instruction } : {}),
           });
@@ -346,11 +352,11 @@ export default function agentForeman(pi: ExtensionAPI) {
       if (!ctx.hasUI) return;
       const current = settingsFrom(ctx);
       const activeModel = current.model ?? (ctx.model ? modelReference(ctx.model) : "none");
-      const typeSafeKey = resolveTypeSafeKey();
+      const classifier = current.classifier ?? DEFAULT_CLASSIFIER;
       const action = await ctx.ui.select("Agent Foreman", [
         `Back to Work: ${current.enabled ? "on" : "off"}`,
         `Choose foreman (${activeModel}, ${current.thinking ?? ctx.thinkingLevel})`,
-        `TypeSafe key: ${typeSafeKey?.source ?? "missing"}`,
+        `Choose classifier (${classifier})`,
       ]);
       if (!action) return;
 
@@ -361,13 +367,22 @@ export default function agentForeman(pi: ExtensionAPI) {
         return;
       }
 
-      if (action.startsWith("TypeSafe key:")) {
-        ctx.ui.notify(
-          typeSafeKey
-            ? `TypeSafe key taken from ${typeSafeKey.source}.`
-            : 'No TypeSafe key. Set TYPESAFE_API_KEY, or add { "type": "api_key", "key": "..." } under "typesafe" in Pi\'s auth file.',
-          typeSafeKey ? "info" : "warning",
+      if (action.startsWith("Choose classifier")) {
+        const classifiers = await ctx.modelRegistry.getAvailableOfType("classifier");
+        if (classifiers.length === 0) {
+          ctx.ui.notify(
+            "No available classifiers. Configure a classifier provider in Pi.",
+            "warning",
+          );
+          return;
+        }
+        const selected = await ctx.ui.select(
+          "Choose the classifier",
+          classifiers.map(modelReference),
         );
+        if (!selected) return;
+        writeGlobalForemanSettings({ ...current, classifier: selected });
+        ctx.ui.notify(`Foreman classifier: ${selected}.`, "info");
         return;
       }
 

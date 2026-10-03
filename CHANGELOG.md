@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.5 — 2026-10-03
+
+### Changed
+
+- Use Pi's classifier runtime instead of the TypeSafe SDK. Requires Pi 1.0.0 or newer.
+- Choose any available Pi classifier in `/agent-foreman`, independently of the instruction writer.
+- Show the selected classifier in expanded decision details.
+
 Releases before 0.5.0 are described in the [GitHub releases](https://github.com/alexshpunt/pi-agent-foreman/releases).
 
 ## 0.5.4 — 2026-10-03

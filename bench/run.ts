@@ -1,13 +1,13 @@
 /* Run final replies against the real jev judge. Costs API calls, so it is not CI. */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { ModelRegistry, ModelRuntime } from "@earendil-works/pi-coding-agent";
 import {
-  createTypeSafeJudge,
+  createClassifierJudge,
   DEFAULT_THRESHOLD,
   decideStop,
   type StopVerdict,
-  TypeSafeNotConfiguredError,
-} from "../src/typesafe.ts";
+} from "../src/classifier.ts";
 import { type BenchCase, type BenchExpectation, CASES } from "./cases.ts";
 
 const RESULTS_PATH = join(".tmp", "bench", "last.json");
@@ -50,7 +50,7 @@ function parseArgs(argv: string[]): Options {
         break;
       case "--help":
         console.log(
-          "npm run bench -- [--repeat N] [--threshold 0.7] [--group promise,quiet,target] [--case id,...] [--model jev-latest]",
+          "npm run bench -- [--repeat N] [--threshold 0.7] [--group promise,quiet,target] [--case id,...] [--model typesafe/jev-latest]",
         );
         process.exit(0);
         break;
@@ -83,7 +83,8 @@ if (selected.length === 0) {
   console.error("no cases selected");
   process.exit(1);
 }
-const judge = createTypeSafeJudge(options.model === undefined ? {} : { model: options.model });
+const runtime = await ModelRuntime.create();
+const judge = createClassifierJudge(new ModelRegistry(runtime), options.model);
 
 let cursor = 0;
 const runCase = async (testCase: BenchCase): Promise<CaseResult> => {
@@ -120,11 +121,8 @@ let results: CaseResult[];
 try {
   results = (await Promise.all(workers)).flat();
 } catch (error) {
-  if (error instanceof TypeSafeNotConfiguredError) {
-    console.error(`bench: ${error.message}`);
-    process.exit(2);
-  }
-  throw error;
+  console.error(`bench: ${error instanceof Error ? error.message : String(error)}`);
+  process.exit(2);
 }
 results.sort((a, b) => selected.indexOf(a.testCase) - selected.indexOf(b.testCase));
 

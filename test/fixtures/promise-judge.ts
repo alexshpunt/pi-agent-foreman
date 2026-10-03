@@ -28,10 +28,14 @@ export default function promiseJudge(pi: ExtensionAPI) {
     if (url.endsWith("/v1/systemone")) {
       const body = JSON.parse(String(init?.body)) as { state: { reply: string } };
       appendFileSync(join(process.cwd(), "judge-inputs.jsonl"), `${JSON.stringify(body.state)}\n`);
+      appendFileSync(join(process.cwd(), "judge-requests.jsonl"), `${JSON.stringify(body)}\n`);
       const promise = body.state.reply === "Continuing the run." ? 0.95 : 0.05;
-      return new Response(JSON.stringify({ answers: { promise: { noul: promise } } }), {
-        headers: { "content-type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ answers: { promise: { type: "noul", noul: promise } } }),
+        {
+          headers: { "content-type": "application/json" },
+        },
+      );
     }
     if (url.startsWith(provider.baseUrl)) {
       appendFileSync(join(process.cwd(), "writer-inputs.jsonl"), `${String(init?.body)}\n`);
@@ -72,7 +76,13 @@ export default function promiseJudge(pi: ExtensionAPI) {
   pi.on("session_start", () => {
     const path = join(getAgentDir(), "settings.json");
     const root = JSON.parse(readFileSync(path, "utf8"));
-    root.agentForeman = { enabled: true, threshold: 0.7, model: "writer/writer", thinking: "off" };
+    root.agentForeman = {
+      enabled: true,
+      threshold: 0.7,
+      model: "writer/writer",
+      thinking: "off",
+      classifier: process.env.FOREMAN_TEST_CLASSIFIER ?? "typesafe/jev-latest",
+    };
     writeFileSync(path, JSON.stringify(root));
     writeFileSync(
       join(getAgentDir(), "models.json"),

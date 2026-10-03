@@ -2,8 +2,8 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import type { StopDecision, StopVerdict } from "../src/classifier.ts";
 import { createDecisionLog, DECISIONS_DIRECTORY, DECISIONS_FILE } from "../src/decisions.ts";
-import type { StopDecision, StopVerdict } from "../src/typesafe.ts";
 
 const verdict: StopVerdict = { promise: 0.9 };
 const decision: StopDecision = { continueWork: true, probability: 0.9, reason: "promise" };
