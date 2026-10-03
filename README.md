@@ -15,7 +15,7 @@ Your agent says "Continuing the run" and ends its turn.
 
 **Foreman sends it back to do the work it left unfinished.**
 
-Pi Agent Foreman checks the **final assistant reply** for an announced next action or explicitly unfinished work. The default classifier is `typesafe/jev-latest`; you can choose another available classifier in Pi. Six questions share one classifier request. Blocking signals prevent intervention. Otherwise, a separate Pi agent writes a specific instruction to continue the identified work.
+Pi Agent Foreman first checks the **latest user request** for an explicit command to do work. A question alone does not activate Foreman, even if the agent promises to act or reports unfinished work. After a direct command, Foreman checks the **final assistant reply** for an announced next action or explicitly unfinished work. The default classifier is `typesafe/jev-latest`; you can choose another available classifier in Pi. Six reply questions share one classifier request. Blocking signals prevent intervention. Otherwise, a separate Pi agent writes a specific instruction within the user's requested scope.
 
 ## Install
 
@@ -28,9 +28,10 @@ installation.
 
 ## Cost and privacy
 
-When enabled, Foreman sends only the final assistant reply to the selected classifier after each settled
-run. It does not send the user request, tool output, earlier replies, or private thinking
-to the judge.
+When enabled, Foreman sends the latest user request to the selected classifier after each settled
+run. If it finds an explicit work command, a second classifier call receives only the final assistant
+reply. Questions and unclear requests stop after the first call. Neither call includes tool output,
+earlier messages, or private thinking.
 
 A separate Pi agent is called only when the signals allow continuation. That agent
 receives the final reply, the last user request, and bounded activity after that request
@@ -82,6 +83,18 @@ Other classifier providers use their normal Pi authentication.
 If the selected classifier is missing, unavailable, or returns an invalid answer,
 Foreman stays quiet and shows a warning. It does not silently switch providers.
 
+The request gate requires an explicit work command at a fixed probability threshold of `0.5`.
+Lowering `agentForeman.threshold` does not lower this gate. It checks only the latest user
+message, not older permissions or the agent's own promises.
+
+- "What is left?" or "Can you fix the bug?" means no intervention.
+- "Fix the bug" allows the normal reply review.
+- "Why does it fail? Find the cause and fix it" also allows review because it includes a direct command.
+- Requests only for a status, explanation, or plan do not authorize carrying out the described work.
+
+If the request gate does not pass, Foreman does not review the reply, call the writer,
+or add a decision panel to the session.
+
 Jev answers six questions about the full reply:
 - Is there an announcement of the assistant's next action?
 - Does an obstacle block further work?
@@ -90,7 +103,7 @@ Jev answers six questions about the full reply:
 - Is further action postponed?
 - Does the assistant explicitly refuse or cancel further work?
 
-An announced next action **or** explicit unfinished work can trigger continuation.
+After the request gate passes, an announced next action **or** explicit unfinished work can trigger continuation.
 A blocker, permission requirement, postponement, or explicit stop vetoes it.
 A completed-work report does not cancel a next action elsewhere in the reply.
 
@@ -98,19 +111,18 @@ The positive threshold is `0.5` by default. Set `agentForeman.threshold` between
 to change it. Each blocking signal vetoes at `0.5`, regardless of that setting.
 Foreman does not combine the scores into a made-up probability.
 
-The nested agent writes an instruction for the work identified in the final reply,
-using bounded context to resolve its action and scope. It respects restrictions in that
+The nested agent writes an instruction only for work explicitly commanded in the latest user request
+and identified in the final reply, using bounded context to resolve its action and scope. It respects restrictions in that
 context and stays quiet if it cannot identify a safe concrete action. It does not resume
 unrelated older work.
 
-Every successful classifier decision is appended to
+Every completed reply review is appended to
 `<agent dir>/agent-foreman/decisions.jsonl` with all six probabilities, the reason,
 and the instruction when one was sent.
 
 ## Tuning the judge
 
-`npm run bench` sends final replies to the real judge and compares its decisions with
-`bench/cases.ts`. Cases cover next-action announcements, explicit unfinished work, completed reports, blockers, permission requests, postponement, and refusals. Examples use generic scenarios. A failing case is a tuning target, not a broken build.
+`npm run bench` checks user requests first, then accepted requests' final replies, against the real classifier and compares the outcomes with `bench/cases.ts`. Paired RU/EN cases use the same reply after a question or a direct command. Other cases cover next-action announcements, unfinished work, completed reports, blockers, permission requests, postponement, and refusals. Examples use generic scenarios. A failing case is a tuning target, not a broken build.
 
 ```sh
 npm run bench                              # all cases, one run each
@@ -133,7 +145,7 @@ When Foreman finds further work without a blocking signal:
 
 The instruction itself is delivered as a normal user message. The main agent does not receive a foreman wrapper or hidden transcript.
 
-Pressing Esc to abort a run never summons Foreman. A status answer can resume work if it explicitly reports incompletion; a completed answer without an announced next action does not.
+Pressing Esc to abort a run never summons Foreman. A status-only request does not activate Foreman, even if its answer reports unfinished work. After a direct work command, a completed answer without an announced next action does not trigger continuation.
 
 ## Development
 

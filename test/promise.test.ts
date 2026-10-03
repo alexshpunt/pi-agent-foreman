@@ -8,13 +8,17 @@ describe("final reply review", () => {
     const activity = `[tool ok] replace: restored retries\n[assistant] ${reply}`;
     const judge = vi.fn(async () => signals({ plannedAction: 0.94 }));
     const instructionRunner = { run: vi.fn(async () => "Start the run now.") };
-    const runner = createClassifierRunner({ judge, instructionRunner });
-    await expect(runner.run("Why disable retries?", activity, reply)).resolves.toBe(
-      "Start the run now.",
-    );
+    const runner = createClassifierRunner({
+      requestJudge: async () => 0.99,
+      judge,
+      instructionRunner,
+    });
+    await expect(
+      runner.run("Restore retries and continue the run.", activity, reply),
+    ).resolves.toBe("Start the run now.");
     expect(judge).toHaveBeenCalledWith({ reply }, undefined);
     expect(instructionRunner.run).toHaveBeenCalledWith(
-      "Why disable retries?",
+      "Restore retries and continue the run.",
       activity,
       reply,
       undefined,
@@ -23,7 +27,11 @@ describe("final reply review", () => {
 
   it("does not use unfinished activity when the final reply has no positive signal", async () => {
     const instructionRunner = { run: vi.fn() };
-    const runner = createClassifierRunner({ judge: async () => signals(), instructionRunner });
+    const runner = createClassifierRunner({
+      requestJudge: async () => 0.99,
+      judge: async () => signals(),
+      instructionRunner,
+    });
     await expect(
       runner.run(
         "Implement this.",
@@ -42,13 +50,16 @@ describe("final reply review", () => {
     const onUnavailable = vi.fn();
     const instructionRunner = { run: vi.fn() };
     const runner = createClassifierRunner({
+      requestJudge: async () => 0.99,
       judge: async () => {
         throw new Error("TypeSafe unavailable");
       },
       instructionRunner,
       onUnavailable,
     });
-    await expect(runner.run("Status?", "Context.", "Here is the status.")).resolves.toBeUndefined();
+    await expect(
+      runner.run("Do the work.", "Context.", "Here is the status."),
+    ).resolves.toBeUndefined();
     expect(instructionRunner.run).not.toHaveBeenCalled();
     expect(onUnavailable).toHaveBeenCalledWith(expect.any(Error));
   });

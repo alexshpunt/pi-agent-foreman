@@ -1,12 +1,14 @@
-/* Run final replies against the real multi-signal judge. Costs API calls, so it is not CI. */
+/* Run request gates and reply reviews against the real classifier. Costs API calls, not CI. */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { ModelRegistry, ModelRuntime } from "@earendil-works/pi-coding-agent";
 import {
   BLOCK_THRESHOLD,
   createClassifierJudge,
+  createRequestJudge,
   DEFAULT_THRESHOLD,
   decideStop,
+  REQUEST_THRESHOLD,
   REVIEW_QUESTIONS,
   type StopVerdict,
 } from "../src/classifier.ts";
@@ -63,7 +65,8 @@ function parseArgs(argv: string[]): Options {
 }
 
 interface Sample {
-  verdict: StopVerdict;
+  requestProbability: number;
+  verdict?: StopVerdict;
   outcome: BenchExpectation;
   reason: string;
   latencyMs: number;
@@ -86,19 +89,24 @@ if (selected.length === 0) {
   process.exit(1);
 }
 const runtime = await ModelRuntime.create();
-const judge = createClassifierJudge(new ModelRegistry(runtime), options.model);
+const registry = new ModelRegistry(runtime);
+const requestJudge = createRequestJudge(registry, options.model);
+const judge = createClassifierJudge(registry, options.model);
 
 let cursor = 0;
 const runCase = async (testCase: BenchCase): Promise<CaseResult> => {
   const samples: Sample[] = [];
   for (let attempt = 0; attempt < options.repeat; attempt += 1) {
     const started = Date.now();
-    const verdict = await judge({ reply: testCase.reply });
-    const decision = decideStop(verdict, options.threshold);
+    const requestProbability = await requestJudge({ request: testCase.request });
+    const verdict =
+      requestProbability >= REQUEST_THRESHOLD ? await judge({ reply: testCase.reply }) : undefined;
+    const decision = verdict ? decideStop(verdict, options.threshold) : undefined;
     samples.push({
-      verdict,
-      outcome: decision.continueWork ? "continue" : "quiet",
-      reason: decision.reason,
+      requestProbability,
+      ...(verdict ? { verdict } : {}),
+      outcome: decision?.continueWork ? "continue" : "quiet",
+      reason: decision?.reason ?? "no confident explicit work command",
       latencyMs: Date.now() - started,
     });
   }
@@ -135,6 +143,7 @@ const header = [
   "group".padEnd(6),
   "expect".padEnd(9),
   ...Array.from({ length: options.repeat }, (_, index) => `run${index + 1}`.padEnd(6)),
+  "explicitCommand",
   ...Object.keys(REVIEW_QUESTIONS),
 ].join(" ");
 console.log(`\n${header}`);
@@ -146,7 +155,11 @@ for (const result of results) {
       result.testCase.group.padEnd(6),
       result.testCase.expect.padEnd(9),
       ...result.samples.map((sample) => cell(sample, result.testCase.expect).padEnd(6)),
-      ...Object.values((result.samples[0] as Sample).verdict).map((value) => value.toFixed(2)),
+      (result.samples[0] as Sample).requestProbability.toFixed(2),
+      ...Object.keys(REVIEW_QUESTIONS).map(
+        (key) =>
+          (result.samples[0] as Sample).verdict?.[key as keyof StopVerdict]?.toFixed(2) ?? "-",
+      ),
     ].join(" "),
   );
 }
@@ -159,7 +172,7 @@ for (const failure of failures) {
   );
 }
 console.log(
-  `\n${results.length - failures.length}/${results.length} passed · ${results.length * options.repeat} jev calls · threshold ${options.threshold}`,
+  `\n${results.length - failures.length}/${results.length} passed · ${results.reduce((count, result) => count + result.samples.reduce((calls, sample) => calls + (sample.verdict ? 2 : 1), 0), 0)} classifier calls · threshold ${options.threshold}`,
 );
 const unstable = results.filter(
   (result) => new Set(result.samples.map((sample) => sample.outcome)).size > 1,
@@ -167,14 +180,18 @@ const unstable = results.filter(
 if (unstable.length > 0)
   console.log(`unstable: ${unstable.map((result) => result.testCase.id).join(", ")}`);
 const borderline = results.filter((result) =>
-  result.samples.some((sample) =>
-    Object.entries(sample.verdict).some(
-      ([key, value]) =>
-        Math.abs(
-          value -
-            (key === "plannedAction" || key === "unfinished" ? options.threshold : BLOCK_THRESHOLD),
-        ) <= BORDERLINE_MARGIN,
-    ),
+  result.samples.some(
+    (sample) =>
+      Math.abs(sample.requestProbability - REQUEST_THRESHOLD) <= BORDERLINE_MARGIN ||
+      Object.entries(sample.verdict ?? {}).some(
+        ([key, value]) =>
+          Math.abs(
+            value -
+              (key === "plannedAction" || key === "unfinished"
+                ? options.threshold
+                : BLOCK_THRESHOLD),
+          ) <= BORDERLINE_MARGIN,
+      ),
   ),
 );
 if (borderline.length > 0)

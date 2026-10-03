@@ -1,6 +1,11 @@
 import type { ClassifierModel } from "@earendil-works/pi-ai";
 import { describe, expect, it, vi } from "vitest";
-import { createClassifierJudge, createClassifierRunner, decideStop } from "../src/classifier.ts";
+import {
+  createClassifierJudge,
+  createClassifierRunner,
+  createRequestJudge,
+  decideStop,
+} from "../src/classifier.ts";
 import { signals } from "./signals.ts";
 
 describe("decideStop", () => {
@@ -40,14 +45,19 @@ describe("createClassifierRunner", () => {
     const judge = vi.fn(async () => verdict);
     const instructionRunner = { run: vi.fn(async () => "Fix the duplicate delivery now.") };
     const onDecision = vi.fn();
-    const runner = createClassifierRunner({ judge, instructionRunner, onDecision });
+    const runner = createClassifierRunner({
+      requestJudge: async () => 0.99,
+      judge,
+      instructionRunner,
+      onDecision,
+    });
     const reply = "The cause is known, but the duplicate is not fixed.";
-    await expect(runner.run("Did you fix it?", "Checked the delivery path.", reply)).resolves.toBe(
+    await expect(runner.run("Fix it.", "Checked the delivery path.", reply)).resolves.toBe(
       "Fix the duplicate delivery now.",
     );
     expect(judge).toHaveBeenCalledWith({ reply }, undefined);
     expect(instructionRunner.run).toHaveBeenCalledWith(
-      "Did you fix it?",
+      "Fix it.",
       "Checked the delivery path.",
       reply,
       undefined,
@@ -64,6 +74,7 @@ describe("createClassifierRunner", () => {
     async (key) => {
       const instructionRunner = { run: vi.fn() };
       const runner = createClassifierRunner({
+        requestJudge: async () => 0.99,
         judge: async () => signals({ plannedAction: 0.95, unfinished: 0.95, [key]: 0.9 }),
         instructionRunner,
       });
@@ -76,6 +87,7 @@ describe("createClassifierRunner", () => {
     const controller = new AbortController();
     const onDecision = vi.fn();
     const runner = createClassifierRunner({
+      requestJudge: async () => 0.99,
       judge: async () => signals({ plannedAction: 0.96 }),
       instructionRunner: {
         run: async () => {
@@ -93,6 +105,7 @@ describe("createClassifierRunner", () => {
 
   it("stays quiet if the generator returns nothing", async () => {
     const runner = createClassifierRunner({
+      requestJudge: async () => 0.99,
       judge: async () => signals({ plannedAction: 0.96 }),
       instructionRunner: { run: async () => undefined },
     });
@@ -127,6 +140,41 @@ describe("createClassifierJudge", () => {
         { type: "bool", probability },
       ]),
     );
+
+  it("sends only the latest request to the request gate using the selected classifier", async () => {
+    const findOfType = vi.fn(() => model);
+    const classify = vi.fn(async () =>
+      response({ explicitCommand: { type: "bool", probability: 0.92 } }),
+    ) as unknown as Parameters<typeof createRequestJudge>[0]["classify"];
+    const signal = new AbortController().signal;
+    const judge = createRequestJudge({ findOfType, classify }, "openrouter/typesafe/jev-1.13");
+
+    await expect(judge({ request: "Fix it." }, signal)).resolves.toBe(0.92);
+    expect(findOfType).toHaveBeenCalledWith("classifier", "openrouter", "typesafe/jev-1.13");
+    expect(classify).toHaveBeenCalledOnce();
+    expect(classify).toHaveBeenCalledWith(
+      model,
+      {
+        state: { request: "Fix it." },
+        questions: { explicitCommand: expect.objectContaining({ type: "bool" }) },
+      },
+      { signal },
+    );
+  });
+
+  it.each([undefined, NaN, Infinity, -0.1, 1.1, "0.9"])(
+    "rejects an invalid request probability: %s",
+    async (probability) => {
+      const classify = vi.fn(async () =>
+        response({
+          explicitCommand: { type: "bool", probability },
+        }),
+      ) as unknown as Parameters<typeof createRequestJudge>[0]["classify"];
+      await expect(
+        createRequestJudge({ findOfType: () => model, classify })({ request: "Fix it." }),
+      ).rejects.toThrow("invalid explicitCommand");
+    },
+  );
 
   it("makes one request for all six signals using the selected provider", async () => {
     const findOfType = vi.fn(() => model);
