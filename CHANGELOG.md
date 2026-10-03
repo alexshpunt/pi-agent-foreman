@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.6 — 2026-10-03
+
+### Fixed
+
+- Cancel stale Foreman instructions when the agent resumes after reload or starts another run.
+- Avoid starting a second prompt while a continuation is already running.
+- Show a continuation decision only while it is still valid.
+
 ## 0.5.5 — 2026-10-03
 
 ### Changed

@@ -260,7 +260,6 @@ function availableModels(ctx: ExtensionContext): ModelLike[] {
 }
 
 export default function agentForeman(pi: ExtensionAPI) {
-  let running = false;
   let stopped = false;
   let keyWarningShown = false;
   let activeRun: AbortController | undefined;
@@ -285,16 +284,16 @@ export default function agentForeman(pi: ExtensionAPI) {
   });
 
   async function observe(ctx: ExtensionContext): Promise<void> {
-    if (running || stopped) return;
+    if (activeRun || stopped || !ctx.isIdle()) return;
     const exchange = settledExchange(ctx);
     if (!exchange) return;
 
     const settings = settingsFrom(ctx);
     if (!settings.enabled) return;
 
-    running = true;
     const controller = new AbortController();
     activeRun = controller;
+    let details: DecisionDetails | undefined;
     try {
       const runner = createRunner(
         ctx,
@@ -309,13 +308,13 @@ export default function agentForeman(pi: ExtensionAPI) {
         },
         (decision, instruction) => {
           if (stopped || controller.signal.aborted) return;
-          pi.appendEntry<DecisionDetails>(DECISION_ENTRY, {
+          details = {
             ...exchange,
             decision,
             classifier: settings.classifier ?? DEFAULT_CLASSIFIER,
             threshold: settings.threshold ?? DEFAULT_THRESHOLD,
             ...(instruction ? { instruction } : {}),
-          });
+          };
         },
       );
       const instruction = await runner.run(
@@ -324,7 +323,11 @@ export default function agentForeman(pi: ExtensionAPI) {
         exchange.reply,
         controller.signal,
       );
-      if (!instruction || stopped || controller.signal.aborted) return;
+      // Let settled dispatch and reload continuations run before delivery.
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+      if (stopped || controller.signal.aborted || !ctx.isIdle()) return;
+      if (details) pi.appendEntry<DecisionDetails>(DECISION_ENTRY, details);
+      if (!instruction) return;
       pi.sendMessage(
         { customType: CONTINUED_ENTRY, content: instruction, display: true },
         { triggerTurn: true },
@@ -335,12 +338,17 @@ export default function agentForeman(pi: ExtensionAPI) {
       }
     } finally {
       if (activeRun === controller) activeRun = undefined;
-      running = false;
     }
   }
 
-  pi.on("agent_settled", async (_event, ctx) => {
-    await observe(ctx);
+  pi.on("agent_start", () => {
+    activeRun?.abort();
+    activeRun = undefined;
+  });
+
+  pi.on("agent_settled", (_event, ctx) => {
+    // Do not hold reload or another queued continuation behind the judge.
+    void observe(ctx);
   });
 
   pi.registerCommand("agent-foreman", {

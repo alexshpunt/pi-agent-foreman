@@ -24,6 +24,35 @@ async function workspace() {
 
 const extensions = [resolve("src/index.ts"), resolve("test/fixtures/promise-judge.ts")];
 
+it("drops Foreman's stale instruction when another settled continuation starts", async () => {
+  const cwd = await workspace();
+  const result = await new PiIntegrationTest({
+    testName: "competing-settled-continuation",
+    artifactsDir: testArtifactsDir(import.meta.filename),
+    cwd,
+    extensions: [...extensions, resolve("test/fixtures/settled-continuation.ts")],
+    rawMode: false,
+    tools: [],
+    isolateUserResources: true,
+    environment: { TYPESAFE_API_KEY: "test-key" },
+    conversation: [
+      assistantMessage([text("Continuing the run.")]),
+      assistantMessage([text("The run is complete.")]),
+    ],
+  }).run("Finish the existing run.");
+  expect(result.providerRequests).toHaveLength(2);
+  const continuation = result.providerRequests[1];
+  if (!continuation) throw new Error("Pi did not resume the run");
+  expect(getProviderRequestLastMessageText(continuation)).toBe("Resume the existing run.");
+  expect(
+    result.messages.some(
+      (value) => (value as { customType?: string }).customType === "agent-foreman-continued",
+    ),
+  ).toBe(false);
+  expect(result.tuiRenderedOutput).not.toContain("Agent is already processing a prompt");
+  expect(result.tuiRenderedOutput).not.toContain("Foreman sent the agent back to work");
+}, 60_000);
+
 it("turns a final promise into a nested instruction and one real Pi continuation", async () => {
   const cwd = await workspace();
   const result = await new PiIntegrationTest({
