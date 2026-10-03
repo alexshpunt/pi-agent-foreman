@@ -11,11 +11,11 @@ describe("foreman runner", () => {
             const instruct = value.customTools?.[0] as unknown as {
               execute(
                 id: string,
-                params: { promisedAction: string; instruction: string },
+                params: { action: string; instruction: string },
               ): Promise<unknown>;
             };
             await instruct.execute("id", {
-              promisedAction: "Run tests now.",
+              action: "Run tests now.",
               instruction: "Run the tests you left unfinished now.",
             });
           }),

@@ -1,7 +1,7 @@
 {
   "name": "pi-agent-foreman",
-  "version": "0.5.6",
-  "description": "Send Pi agents back to do the immediate work they promised.",
+  "version": "0.5.7",
+  "description": "Send Pi agents back to do announced or explicitly unfinished work.",
   "type": "module",
   "license": "MIT",
   "author": "Aleksandr Shpuntenko",

@@ -1,11 +1,13 @@
-/* Run final replies against the real jev judge. Costs API calls, so it is not CI. */
+/* Run final replies against the real multi-signal judge. Costs API calls, so it is not CI. */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { ModelRegistry, ModelRuntime } from "@earendil-works/pi-coding-agent";
 import {
+  BLOCK_THRESHOLD,
   createClassifierJudge,
   DEFAULT_THRESHOLD,
   decideStop,
+  REVIEW_QUESTIONS,
   type StopVerdict,
 } from "../src/classifier.ts";
 import { type BenchCase, type BenchExpectation, CASES } from "./cases.ts";
@@ -133,7 +135,7 @@ const header = [
   "group".padEnd(6),
   "expect".padEnd(9),
   ...Array.from({ length: options.repeat }, (_, index) => `run${index + 1}`.padEnd(6)),
-  "promise",
+  ...Object.keys(REVIEW_QUESTIONS),
 ].join(" ");
 console.log(`\n${header}`);
 console.log("-".repeat(header.length));
@@ -144,7 +146,7 @@ for (const result of results) {
       result.testCase.group.padEnd(6),
       result.testCase.expect.padEnd(9),
       ...result.samples.map((sample) => cell(sample, result.testCase.expect).padEnd(6)),
-      (result.samples[0] as Sample).verdict.promise.toFixed(2),
+      ...Object.values((result.samples[0] as Sample).verdict).map((value) => value.toFixed(2)),
     ].join(" "),
   );
 }
@@ -165,8 +167,14 @@ const unstable = results.filter(
 if (unstable.length > 0)
   console.log(`unstable: ${unstable.map((result) => result.testCase.id).join(", ")}`);
 const borderline = results.filter((result) =>
-  result.samples.some(
-    (sample) => Math.abs(sample.verdict.promise - options.threshold) <= BORDERLINE_MARGIN,
+  result.samples.some((sample) =>
+    Object.entries(sample.verdict).some(
+      ([key, value]) =>
+        Math.abs(
+          value -
+            (key === "plannedAction" || key === "unfinished" ? options.threshold : BLOCK_THRESHOLD),
+        ) <= BORDERLINE_MARGIN,
+    ),
   ),
 );
 if (borderline.length > 0)

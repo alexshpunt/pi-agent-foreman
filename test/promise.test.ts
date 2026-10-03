@@ -1,15 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
 import { createClassifierRunner, decideStop } from "../src/classifier.ts";
+import { signals } from "./signals.ts";
 
-describe("promise review", () => {
+describe("final reply review", () => {
   it("judges only the final reply and gives the writer context after a positive decision", async () => {
     const reply = "Restored retries. Continuing the run.";
     const activity = `[tool ok] replace: restored retries\n[assistant] ${reply}`;
-    const judge = vi.fn(async () => ({ promise: 0.94 }));
-    const instructionRunner = { run: vi.fn(async () => "Start the promised run now.") };
+    const judge = vi.fn(async () => signals({ plannedAction: 0.94 }));
+    const instructionRunner = { run: vi.fn(async () => "Start the run now.") };
     const runner = createClassifierRunner({ judge, instructionRunner });
     await expect(runner.run("Why disable retries?", activity, reply)).resolves.toBe(
-      "Start the promised run now.",
+      "Start the run now.",
     );
     expect(judge).toHaveBeenCalledWith({ reply }, undefined);
     expect(instructionRunner.run).toHaveBeenCalledWith(
@@ -20,33 +21,35 @@ describe("promise review", () => {
     );
   });
 
-  it("does not call the writer without a confident promise, even when work is unfinished", async () => {
-    const instructionRunner = { run: vi.fn(async () => "Keep implementing.") };
-    const runner = createClassifierRunner({
-      judge: async () => ({ promise: 0.1 }),
-      instructionRunner,
-    });
+  it("does not use unfinished activity when the final reply has no positive signal", async () => {
+    const instructionRunner = { run: vi.fn() };
+    const runner = createClassifierRunner({ judge: async () => signals(), instructionRunner });
     await expect(
-      runner.run("Implement this.", "[assistant] Only one file is done.", "Only one file is done."),
+      runner.run(
+        "Implement this.",
+        "[assistant] Earlier work is unfinished.",
+        "The requested work is complete.",
+      ),
     ).resolves.toBeUndefined();
     expect(instructionRunner.run).not.toHaveBeenCalled();
   });
 
-  it("stays quiet on an uncertain promise", () => {
-    expect(decideStop({ promise: 0.69 }).continueWork).toBe(false);
+  it("stays quiet when both positive signals are below the threshold", () => {
+    expect(decideStop(signals({ plannedAction: 0.49, unfinished: 0.49 })).continueWork).toBe(false);
   });
 
-  it("does not replace an unavailable jev with a different judge", async () => {
-    const instructionRunner = { run: vi.fn(async () => "Keep working.") };
+  it("does not replace an unavailable classifier with another judge", async () => {
+    const onUnavailable = vi.fn();
+    const instructionRunner = { run: vi.fn() };
     const runner = createClassifierRunner({
       judge: async () => {
         throw new Error("TypeSafe unavailable");
       },
       instructionRunner,
+      onUnavailable,
     });
-    await expect(
-      runner.run("Status?", "[assistant] Here is the status.", "Here is the status."),
-    ).resolves.toBeUndefined();
+    await expect(runner.run("Status?", "Context.", "Here is the status.")).resolves.toBeUndefined();
     expect(instructionRunner.run).not.toHaveBeenCalled();
+    expect(onUnavailable).toHaveBeenCalledWith(expect.any(Error));
   });
 });
