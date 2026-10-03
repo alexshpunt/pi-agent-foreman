@@ -26,6 +26,83 @@ async function workspace() {
 const extensions = [resolve("src/index.ts"), resolve("test/fixtures/promise-judge.ts")];
 
 it.each([
+  { name: "status-en", request: "What is left?", probability: 0.05, continues: false },
+  { name: "status-ru", request: "Что осталось?", probability: 0.05, continues: false },
+  { name: "question-en", request: "Can you fix the bug?", probability: 0.05, continues: false },
+  { name: "question-ru", request: "Можешь исправить баг?", probability: 0.05, continues: false },
+  { name: "command", request: "Fix the bug.", probability: 0.99, continues: true },
+  {
+    name: "mixed-question-command",
+    request: "Why does it fail? Find the cause and fix it.",
+    probability: 0.99,
+    continues: true,
+  },
+])(
+  "gates $name before reply review and continuation",
+  async ({ name, request, probability, continues }) => {
+    const cwd = await workspace();
+    const reply = "The bug is not fixed. I will fix it now.";
+    const result = await new PiIntegrationTest({
+      testName: `request-gate-${name}`,
+      artifactsDir: testArtifactsDir(import.meta.filename),
+      cwd,
+      extensions,
+      rawMode: false,
+      tools: [],
+      isolateUserResources: true,
+      environment: {
+        TYPESAFE_API_KEY: "test-key",
+        FOREMAN_TEST_REQUEST_PROBABILITY: String(probability),
+        FOREMAN_TEST_SIGNALS: JSON.stringify({ unfinished: 0.99, plannedAction: 0.99 }),
+      },
+      conversation: [
+        assistantMessage([text(reply)]),
+        ...(continues ? [assistantMessage([text("The run is complete.")])] : []),
+      ],
+    }).run(request);
+
+    expect(result.providerRequests).toHaveLength(continues ? 2 : 1);
+    const requestStates = (await readFile(resolve(cwd, "request-inputs.jsonl"), "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    expect(requestStates).toEqual(Array.from({ length: continues ? 2 : 1 }, () => ({ request })));
+    const requestCall = JSON.parse(
+      (await readFile(resolve(cwd, "request-requests.jsonl"), "utf8")).trim().split("\n")[0] ?? "",
+    );
+    expect(requestCall.questions).toMatchObject({ explicitCommand: { type: "noul" } });
+
+    if (continues) {
+      expect(result.tuiRenderedOutput).toContain("Foreman sent the agent back to work");
+      const replyStates = (await readFile(resolve(cwd, "judge-inputs.jsonl"), "utf8"))
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line));
+      expect(replyStates).toEqual([{ reply }, { reply: "The run is complete." }]);
+    } else {
+      for (const file of ["judge-inputs.jsonl", "writer-inputs.jsonl"]) {
+        await expect(readFile(resolve(cwd, file), "utf8")).rejects.toMatchObject({
+          code: "ENOENT",
+        });
+      }
+      const savedRun = await PiRun.open(result.artifacts.directory);
+      if (!savedRun.session) throw new Error("Pi did not persist the session");
+      const entries = savedRun.session
+        .trim()
+        .split("\n")
+        .map((line) => JSON.parse(line));
+      expect(
+        entries.some((entry) =>
+          ["agent-foreman-decision", "agent-foreman-continued"].includes(entry.customType),
+        ),
+      ).toBe(false);
+      expect(result.tuiRenderedOutput).not.toContain("⛑ Foreman");
+    }
+  },
+  60_000,
+);
+
+it.each([
   {
     name: "implicit-next-action",
     reply: "Already configured. Next — install dependencies.",
@@ -155,7 +232,7 @@ it("turns a final promise into a nested instruction and one real Pi continuation
       assistantMessage([text("Continuing the run.")]),
       assistantMessage([text("The run is complete.")]),
     ],
-  }).run("Why did you disable retries?");
+  }).run("Restore retries and continue the run.");
   const states = (await readFile(resolve(cwd, "judge-inputs.jsonl"), "utf8"))
     .trim()
     .split("\n")

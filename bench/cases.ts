@@ -1,16 +1,18 @@
-/** Final-reply tuning cases for the real multi-signal judge, not CI tests. */
+/** Request-gate and final-reply cases for the real classifier, not CI tests. */
 export type BenchExpectation = "continue" | "quiet";
 
 export interface BenchCase {
   id: string;
   group: "promise" | "quiet" | "target";
+  /** Latest user message, checked before the reply. */
+  request: string;
   /** The entire final assistant reply, without user or tool context. */
   reply: string;
   expect: BenchExpectation;
   why: string;
 }
 
-export const CASES: BenchCase[] = [
+const REPLY_CASES: Omit<BenchCase, "request">[] = [
   {
     id: "configured-next-install",
     group: "target",
@@ -219,9 +221,121 @@ export const CASES: BenchCase[] = [
   },
 ];
 
+const REQUEST_CASES: BenchCase[] = [
+  {
+    id: "status-request-en",
+    group: "target",
+    request: "What is left?",
+    reply: "The bug is not fixed. I will fix it now.",
+    expect: "quiet",
+    why: "a status question does not authorize unfinished work",
+  },
+  {
+    id: "status-request-ru",
+    group: "target",
+    request: "Что осталось?",
+    reply: "Осталась LPT-392. Сейчас начну работу над ней.",
+    expect: "quiet",
+    why: "a Russian status question does not authorize the remaining task",
+  },
+  {
+    id: "question-request-en",
+    group: "target",
+    request: "Can you fix the bug?",
+    reply: "The bug is not fixed. I will fix it now.",
+    expect: "quiet",
+    why: "a question-shaped request is not a direct command",
+  },
+  {
+    id: "question-request-ru",
+    group: "target",
+    request: "Можешь исправить баг?",
+    reply: "Осталась LPT-392. Сейчас начну работу над ней.",
+    expect: "quiet",
+    why: "a Russian question-shaped request is not a direct command",
+  },
+  {
+    id: "command-request-en",
+    group: "target",
+    request: "Fix the bug.",
+    reply: "The bug is not fixed. I will fix it now.",
+    expect: "continue",
+    why: "the same reply can continue after a direct command",
+  },
+  {
+    id: "command-request-ru",
+    group: "target",
+    request: "Сделай LPT-392.",
+    reply: "Осталась LPT-392. Сейчас начну работу над ней.",
+    expect: "continue",
+    why: "the same Russian reply can continue after a direct command",
+  },
+  {
+    id: "mixed-request-en",
+    group: "target",
+    request: "Why does it fail? Find the cause and fix it.",
+    reply: "The bug is not fixed. I will fix it now.",
+    expect: "continue",
+    why: "a question does not cancel a separate work command",
+  },
+  {
+    id: "mixed-request-ru",
+    group: "target",
+    request: "Почему падает? Найди причину и исправь.",
+    reply: "Причину нашёл, исправление не внесено. Сейчас исправлю.",
+    expect: "continue",
+    why: "a Russian mixed request includes a direct work command",
+  },
+  {
+    id: "plan-request",
+    group: "target",
+    request: "Write a plan for fixing the bug. Do not implement it.",
+    reply: "The bug is not fixed. I will fix it now.",
+    expect: "quiet",
+    why: "a plan-only request does not authorize implementation",
+  },
+  {
+    id: "explanation-request",
+    group: "target",
+    request: "Explain why the bug occurs.",
+    reply: "The bug is not fixed. I will fix it now.",
+    expect: "quiet",
+    why: "an explanation does not authorize the described fix",
+  },
+  {
+    id: "short-command-ru",
+    group: "target",
+    request: "делай",
+    reply: "Осталась LPT-392. Сейчас начну работу над ней.",
+    expect: "continue",
+    why: "a short direct command still authorizes work",
+  },
+  {
+    id: "quoted-command",
+    group: "target",
+    request: 'What does the message "Fix the bug now" mean?',
+    reply: "The bug is not fixed. I will fix it now.",
+    expect: "quiet",
+    why: "a quoted command is not a user instruction",
+  },
+  {
+    id: "unclear-request",
+    group: "target",
+    request: "Maybe we could fix the bug sometime.",
+    reply: "The bug is not fixed. I will fix it now.",
+    expect: "quiet",
+    why: "a suggestion is not a direct work command",
+  },
+];
+
+export const CASES: BenchCase[] = [
+  ...REPLY_CASES.map((testCase) => ({ ...testCase, request: "Complete the requested work." })),
+  ...REQUEST_CASES,
+];
+
 if (CASES.length === 0) throw new Error("no bench cases");
 for (const value of CASES) {
-  if (!value.id || !value.reply || !value.why)
+  if (!value.id || !value.request || !value.reply || !value.why)
     throw new Error(`bench case is incomplete: ${JSON.stringify(value)}`);
 }
 if (new Set(CASES.map((value) => value.id)).size !== CASES.length)

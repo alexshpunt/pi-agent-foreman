@@ -10,6 +10,7 @@ import {
   BLOCK_THRESHOLD,
   createClassifierJudge,
   createClassifierRunner,
+  createRequestJudge,
   DEFAULT_CLASSIFIER,
   DEFAULT_THRESHOLD,
   SIGNAL_LABELS,
@@ -64,13 +65,13 @@ export function decisionText(details: DecisionDetails, expanded: boolean): strin
     "",
     "### Evaluated assistant reply",
     "",
-    "*Judge evaluates only this last assistant reply.*",
+    "*After the request gate passes, the reply judge evaluates only this last assistant reply.*",
     "",
     details.reply,
     "",
     "### User request",
     "",
-    "*Used only to write the continuation instruction. Not evaluated by judge.*",
+    "*Checked first for an explicit work command, then used to write the continuation instruction.*",
     "",
     details.user,
     "",
@@ -239,6 +240,7 @@ function createRunner(
 ): ForemanRunner {
   const log = createDecisionLog(getAgentDir());
   return createClassifierRunner({
+    requestJudge: createRequestJudge(ctx.modelRegistry, settings.classifier),
     judge: createClassifierJudge(ctx.modelRegistry, settings.classifier),
     threshold: settings.threshold,
     instructionRunner: createInstructionRunner(ctx, settings),

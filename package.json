@@ -1,6 +1,6 @@
 {
   "name": "pi-agent-foreman",
-  "version": "0.5.7",
+  "version": "0.5.8",
   "description": "Send Pi agents back to do announced or explicitly unfinished work.",
   "type": "module",
   "license": "MIT",

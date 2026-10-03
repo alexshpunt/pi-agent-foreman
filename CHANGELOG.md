@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.5.8 — 2026-10-03
+
+### Fixed
+
+- Check the latest user request for an explicit work command before reviewing the agent's reply.
+- Stay quiet for questions, status reports, explanations, plans, and unclear requests, even when the agent announces further work.
+- Keep mixed question-and-command requests eligible, but limit continuation to the commanded work.
+
+### Changed
+
+- Send the latest user request to the selected classifier in a separate request-gate call. Only an accepted work command leads to the six-signal reply review.
+- Add paired RU/EN request cases to the classifier bench.
+
 ## 0.5.7 — 2026-10-03
 
 ### Fixed

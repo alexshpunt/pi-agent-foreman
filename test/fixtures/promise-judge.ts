@@ -27,7 +27,27 @@ export default function promiseJudge(pi: ExtensionAPI) {
   globalThis.fetch = async (input, init) => {
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (url.endsWith("/v1/systemone")) {
-      const body = JSON.parse(String(init?.body)) as { state: { reply: string } };
+      const body = JSON.parse(String(init?.body)) as {
+        state: { reply?: string; request?: string };
+      };
+      if (body.state.request !== undefined) {
+        appendFileSync(
+          join(process.cwd(), "request-inputs.jsonl"),
+          `${JSON.stringify(body.state)}\n`,
+        );
+        appendFileSync(join(process.cwd(), "request-requests.jsonl"), `${JSON.stringify(body)}\n`);
+        return new Response(
+          JSON.stringify({
+            answers: {
+              explicitCommand: {
+                type: "noul",
+                noul: Number(process.env.FOREMAN_TEST_REQUEST_PROBABILITY ?? "0.99"),
+              },
+            },
+          }),
+          { headers: { "content-type": "application/json" } },
+        );
+      }
       appendFileSync(join(process.cwd(), "judge-inputs.jsonl"), `${JSON.stringify(body.state)}\n`);
       appendFileSync(join(process.cwd(), "judge-requests.jsonl"), `${JSON.stringify(body)}\n`);
       const verdict =
