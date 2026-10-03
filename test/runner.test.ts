@@ -1,50 +1,21 @@
+import type { CreateAgentSessionOptions } from "@earendil-works/pi-coding-agent";
 import { describe, expect, it, vi } from "vitest";
 import { createForemanRunner } from "../src/runner.ts";
 
 describe("foreman runner", () => {
-  it("gives a fresh agent the current activity and accepts only a veto call", async () => {
-    let options: any;
-    const prompt = vi.fn(async () => {
-      const veto = options.customTools.find((tool: any) => tool.name === "veto");
-      await veto.execute("id", {
-        remainingWork: "The tests were not run.",
-        instruction: "Finish the remaining work now: run the tests.",
-      });
-    });
-    const createSession = vi.fn(async (value: any) => {
-      options = value;
-      return { session: { prompt, abort: vi.fn(), dispose: vi.fn() } };
-    });
-    const runner = createForemanRunner({
-      model: { provider: "p", id: "m" },
-      cwd: "/tmp",
-      agentDir: "/tmp",
-      thinking: "high",
-      systemPrompt: "custom foreman prompt",
-      createSession,
-    });
-
-    await expect(
-      runner.run("Finish the task.", "[assistant] I did not run the tests."),
-    ).resolves.toBe("Finish the remaining work now: run the tests.");
-    expect(prompt).toHaveBeenCalledWith(
-      "<last-user-message>\nFinish the task.\n</last-user-message>\n\n<agent-activity>\n[assistant] I did not run the tests.\n</agent-activity>",
-      { expandPromptTemplates: false },
-    );
-    expect(options.tools).toEqual(["veto"]);
-    expect(options.thinkingLevel).toBe("high");
-    expect(options.resourceLoader.getSystemPrompt()).toBe("custom foreman prompt");
-  });
-
-  it("uses an instruction tool without asking the model to judge again", async () => {
-    let options: any;
-    const createSession = vi.fn(async (value: any) => {
-      options = value;
+  it("uses an instruction tool after jev decides to continue", async () => {
+    const createSession = vi.fn(async (value: CreateAgentSessionOptions) => {
       return {
         session: {
           prompt: vi.fn(async () => {
-            await options.customTools[0].execute("id", {
-              remainingWork: "Tests have not run.",
+            const instruct = value.customTools?.[0] as unknown as {
+              execute(
+                id: string,
+                params: { promisedAction: string; instruction: string },
+              ): Promise<unknown>;
+            };
+            await instruct.execute("id", {
+              promisedAction: "Run tests now.",
               instruction: "Run the tests you left unfinished now.",
             });
           }),
@@ -57,16 +28,15 @@ describe("foreman runner", () => {
       model: { provider: "p", id: "m" },
       cwd: "/tmp",
       agentDir: "/tmp",
-      instructionOnly: true,
       createSession,
     });
-    await expect(runner.run("Test the change.", "[assistant] I skipped the tests.")).resolves.toBe(
-      "Run the tests you left unfinished now.",
-    );
-    expect(options.tools).toEqual(["instruct"]);
+    await expect(
+      runner.run("Test the change.", "[assistant] Running tests now.", "Running tests now."),
+    ).resolves.toBe("Run the tests you left unfinished now.");
+    expect(createSession.mock.calls[0]?.[0].tools).toEqual(["instruct"]);
   });
 
-  it("returns nothing when the model does not call veto", async () => {
+  it("returns nothing when the model does not call instruct", async () => {
     const createSession = vi.fn(async () => ({
       session: { prompt: vi.fn(), abort: vi.fn(), dispose: vi.fn() },
     }));
@@ -76,6 +46,8 @@ describe("foreman runner", () => {
       agentDir: "/tmp",
       createSession,
     });
-    await expect(runner.run("Research this.", "Research complete.")).resolves.toBeUndefined();
+    await expect(
+      runner.run("Research this.", "Research complete.", "Research complete."),
+    ).resolves.toBeUndefined();
   });
 });

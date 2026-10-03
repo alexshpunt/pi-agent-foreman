@@ -11,15 +11,13 @@
   <a href="./LICENSE"><img src="https://img.shields.io/npm/l/pi-agent-foreman" alt="MIT license"></a>
 </p>
 
-Your agent finished early.
+Your agent says "Continuing the run" and ends its turn.
 
-The tests are still waiting. The implementation has a "small follow-up." The agent has helpfully explained what somebody should do next.
+**Foreman sends it back to do what it promised.**
 
-**Foreman sends it back to work.**
-
-Pi Agent Foreman watches the final exchange after every settled Pi run. If the agent openly admits that it stopped before finishing required work, a small second model gives it one firm instruction: finish the job now.
-
-The foreman sees the last user message and the agent activity that followed it, then either calls `veto` or stays quiet. The activity includes every assistant text, compact tool-call arguments, and success or error statuses. Private thinking and full tool results stay out. This keeps enough context for background updates without turning the review into tool-call archaeology.
+Pi Agent Foreman asks TypeSafe (jev) whether the **final assistant reply** promises an
+immediate action. A confident promise triggers a separate Pi agent that writes a specific
+instruction. No promise means no intervention, even if earlier work is unfinished.
 
 ## Install
 
@@ -32,13 +30,17 @@ installation.
 
 ## Cost and privacy
 
-When enabled, Foreman makes one extra review request after each settled Pi run. `auto` uses
-TypeSafe when a key is configured and the selected Pi model otherwise. If TypeSafe is
-unavailable, Foreman falls back to the model judge.
+When enabled, Foreman sends only the final assistant reply to TypeSafe after each settled
+run. It does not send the user request, tool output, earlier replies, or private thinking
+to the judge.
 
-The reviewer receives the last user message plus the assistant's text, compact tool arguments,
-and success or error statuses. It does not receive private thinking or full tool results.
-TypeSafe decisions are stored locally in `<agent dir>/agent-foreman/decisions.jsonl`.
+A separate Pi agent is called only after a confident promise is detected. That agent
+receives the final reply, the last user request, and bounded activity after that request
+to identify the promised action. Activity includes assistant text, earlier Foreman
+instructions, compact tool arguments, and excerpts of tool results. These can contain
+private data; size limits do not redact secrets. Private thinking is not included.
+
+Decisions are stored in `<agent dir>/agent-foreman/decisions.jsonl` with a `promise` probability.
 
 ## Set up the foreman
 
@@ -51,9 +53,8 @@ Run:
 The menu lets you:
 
 - turn **Back to Work** on or off;
-- choose a foreman from the models already available in Pi;
-- choose its reasoning level;
-- choose the **Judge**: `auto`, `model`, or `typesafe`.
+- choose the model that writes instructions from those already available in Pi;
+- choose its reasoning level.
 
 Back to Work is on by default. Until you choose a dedicated foreman, it uses the current session model and reasoning level. Choosing a model automatically enables the mode.
 
@@ -71,37 +72,10 @@ The selection is stored globally in Pi's `settings.json`:
 
 You do not need to edit this file yourself.
 
-## The two judges
+## How it decides
 
-There are two ways to judge a settled run.
-
-**The model judge** asks a nested model to call a `veto` tool. It writes the instruction it
-sends back, in the language of the assistant message.
-
-**The TypeSafe judge** asks a TypeSafe System One model for probabilities and decides
-in code whether work remains. When it says to continue, a nested Pi model writes a specific
-instruction from the request and activity. If that model cannot write one, the agent is not
-sent back to work.
-
-`agentForeman.judge` selects one:
-
-| Value | Behaviour |
-| --- | --- |
-| `auto` | The TypeSafe judge when a key is configured, the model judge otherwise. This is the default. |
-| `model` | Always the model judge. |
-| `typesafe` | The TypeSafe judge, falling back to the model judge when TypeSafe cannot answer. |
-
-The fallback is what keeps the feature safe to leave on: a missing key, a refused request, or
-a service that is down all end with the model judge doing the review, and the session shows one
-warning about it.
-
-Give the TypeSafe judge a key in one of two places. Either the environment of the Pi process:
-
-```sh
-export TYPESAFE_API_KEY=...
-```
-
-Or Pi's own credential file, which is read through Pi's public helper:
+Foreman requires a TypeSafe key. Set `TYPESAFE_API_KEY` in the Pi process, or add the key
+to Pi's auth file under `"typesafe"`:
 
 ```json
 {
@@ -109,85 +83,43 @@ Or Pi's own credential file, which is read through Pi's public helper:
 }
 ```
 
-The environment wins. The `/agent-foreman` menu shows which of the two the judge is using.
+The environment wins. The menu shows where the key comes from. Without a key, or if jev
+cannot answer, Foreman stays quiet and shows a warning instead of using another judge.
 
-```json
-{
-  "agentForeman": {
-    "enabled": true,
-    "judge": "auto",
-    "threshold": 0.5
-  }
-}
-```
+Jev answers one question: does the final reply promise a concrete action **now or next**?
+"Continuing the run" counts. Confidence, completed-work reports, optional ideas, later
+or conditional promises, and automatic continuation do not.
 
-One request asks about the settled exchange: whether required work is still unfinished, whether
-the agent put it off, and the reasons a stop can be legitimate. `threshold` is the
-minimum probability that required work is unfinished. The nested model writes the instruction
-in the language of the assistant message.
+The code compares the promise probability with a threshold, `0.7` by default.
+You can set `agentForeman.threshold` between `0` and `1`. Below the threshold,
+Foreman does nothing. At or above it, a nested Pi agent writes an instruction for the promised
+action, not for unrelated unfinished work. If it cannot identify the action, Foreman
+stays quiet rather than sending a generic instruction.
 
-If the user asked for a cause, a concrete explanation completes that request. Mentioning an
-unasked deeper question does not mean the agent must continue.
-
-Both judges follow the same policy, written once in `src/policy.ts`: the model judge reads it
-as prose, the TypeSafe judge asks about it as typed questions, so the two cannot drift apart on
-what counts as a legitimate stop.
-
-Every TypeSafe decision is appended to `<agent dir>/agent-foreman/decisions.jsonl`, one JSON
-line per settled run, with every answer, the decision and its reason, and the instruction when
-one was sent. The instruction itself also lands in the session file; the numbers behind it only
-exist in this log.
+Every successful jev decision is appended to `<agent dir>/agent-foreman/decisions.jsonl`
+with its probability, reason, and instruction when one was sent.
 
 ## Tuning the judge
 
-`npm run bench` sends a set of invented exchanges to the real judge and compares each
-decision with the intended behaviour in `bench/cases.ts`. The cases cover lazy stops, the
-legitimate reasons to stop, and the cases that are already known to be hard. Every case is
-written for that file: no case is taken from a real session, and none names a real
-repository, commit, or log. A failing case is a tuning target, not a broken build.
+`npm run bench` sends final replies to the real judge and compares its decisions with
+`bench/cases.ts`. Cases cover immediate promises, confidence without a promise, and
+exceptions such as negation and automatic reload. The RU/EN retry pair comes from a
+user-provided example with generic names. A failing case is a tuning target, not a broken build.
 
 ```sh
 npm run bench                              # all cases, one run each
 npm run bench -- --repeat 3                # stability: three runs per case
-npm run bench -- --group lazy,target       # only some groups
-npm run bench -- --case todo-in-reply      # one case
-npm run bench -- --threshold 0.7           # the tuning knobs
+npm run bench -- --group promise,target    # only some groups
+npm run bench -- --case retry-fixed-promises-resume-ru # one case
+npm run bench -- --threshold 0.9           # raise the confidence threshold
 ```
 
 This costs real API calls and is not part of `npm test` or CI. Every run writes the full
-result to `bench/.results/last.json` (ignored by git) and exits non-zero when a case fails.
-
-## Custom prompt
-
-Create either a project prompt:
-
-```text
-.pi/agent-foreman/prompt.md
-.pi/agent-foreman/config.json
-```
-
-or a global prompt:
-
-```text
-~/.pi/agent/agent-foreman/prompt.md
-~/.pi/agent/agent-foreman/config.json
-```
-
-A trusted project prompt takes precedence over the global prompt. The project file is ignored when the project is not trusted.
-
-Without `config.json`, `prompt.md` completely replaces the built-in reviewer prompt. To append your instructions instead, add:
-
-```json
-{
-  "mode": "append"
-}
-```
-
-The supported modes are `override` and `append`. If the prompt or configuration cannot be read, Foreman shows a warning and uses its built-in prompt.
+result to `.tmp/bench/last.json` (ignored by git) and exits non-zero when a case fails.
 
 ## What it looks like
 
-When the foreman catches an unfinished answer:
+When Foreman detects an immediate promise:
 
 ```text
 ⛑ Foreman sent the agent back to work
@@ -195,7 +127,7 @@ When the foreman catches an unfinished answer:
 
 The instruction itself is delivered as a normal user message. The main agent does not receive a foreman wrapper or hidden transcript.
 
-Pressing Esc to abort a run never summons the foreman. Research answers, genuinely completed work, and agents waiting for background work or sub-agents they already started are left alone.
+Pressing Esc to abort a run never summons Foreman. A status answer without an immediate promise does not resume earlier work.
 
 ## Development
 

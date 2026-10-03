@@ -1,62 +1,28 @@
 import { readStoredCredential } from "@earendil-works/pi-coding-agent";
 import { TypeSafeClient } from "@typesafe-ai/sdk";
-import { LEGITIMATE_STOP_REASONS, STOP_SIGNALS } from "./policy.ts";
 import type { ForemanRunner } from "./runner.ts";
 
-/**
- * TypeSafe-backed stop judge.
- *
- * The model judge asks a nested LLM to call a `veto` tool. This judge asks a TypeSafe System
- * One model for probabilities instead, and the decision lives in code: one request, one
- * answer per question, no generated prose and no tool call.
- *
- * The questions come from the shared policy, so the reasons a stop can be legitimate are
- * worded once for both judges.
- */
-
-/** Independent questions about the settled exchange, answered in one request. */
-export const STOP_QUESTIONS = {
-  work_remains: {
+/** Jev classifies only the final reply, not task completion. */
+export const PROMISE_QUESTIONS = {
+  promise: {
     type: "noul" as const,
-    instructions: STOP_SIGNALS.work_remains.question,
-    criteria: { true: STOP_SIGNALS.work_remains.true, false: STOP_SIGNALS.work_remains.false },
+    instructions:
+      "Does the reply make an affirmative commitment to a new action by the assistant NOW or NEXT? Read the meaning, not keywords. 'I will not continue' is a refusal, not a commitment. A session continuing automatically after reload is not a new action by the assistant. First exclude negated or quoted promises, conditional or later work, and reports of automatic continuation. Then check for an affirmative immediate action. 'Continuing the run' and 'Продолжаю запуск' are affirmative commitments. Confidence and unfinished tasks alone do not count.",
+    criteria: {
+      true: "The assistant commits to its own immediate next action: continuing a run, starting work now, checking something next, or doing another concrete step. A completed correction followed by 'Continuing the run' still contains a promise.",
+      false:
+        "No affirmative immediate promise. A negation ('I will not continue'), an earlier quoted promise, a later or conditional promise, and automatic reload continuation are FALSE. Completed-work reports, confidence, unfinished-work descriptions, optional suggestions, and waiting for a running job are also FALSE.",
+    },
   },
-  defers_work: {
-    type: "noul" as const,
-    instructions: STOP_SIGNALS.defers_work.question,
-    criteria: { true: STOP_SIGNALS.defers_work.true, false: STOP_SIGNALS.defers_work.false },
-  },
-  ...Object.fromEntries(
-    LEGITIMATE_STOP_REASONS.map((reason) => [
-      reason.id,
-      {
-        type: "noul" as const,
-        instructions: reason.question,
-        criteria: {
-          true: reason.rule,
-          false: reason.notCounted ?? "The message does not show this.",
-        },
-      },
-    ]),
-  ),
 };
 
-/** Probabilities from one judge request. */
+/** Probability that the final reply promises an immediate action. */
 export interface StopVerdict {
-  workRemains: number;
-  defersWork: number;
-  /** Probability per legitimate reason, keyed by the id the shared policy gives it. */
-  gates: Record<string, number>;
+  promise: number;
 }
 
-export interface StopThresholds {
-  /** Minimum probability that required work is unfinished before the agent is sent back. */
-  workRemains: number;
-  /** At or above this, a gate signal cancels the continuation. */
-  gate: number;
-}
-
-export const DEFAULT_THRESHOLDS: StopThresholds = { workRemains: 0.5, gate: 0.5 };
+/** Minimum confidence needed to act on a promise. */
+export const DEFAULT_THRESHOLD = 0.7;
 
 export interface StopDecision {
   continueWork: boolean;
@@ -64,65 +30,25 @@ export interface StopDecision {
   reason: string;
 }
 
-/**
- * Combine the verdict into one decision.
- *
- * One signal decides and the shared policy lists what can cancel it. The cancelling signals
- * are the legitimate reasons to stop, so a probability that work remains is not enough on its
- * own while one of them holds.
- */
+/** Deterministic branch after jev classifies the reply. */
 export function decideStop(
   verdict: StopVerdict,
-  thresholds: StopThresholds = DEFAULT_THRESHOLDS,
+  threshold: number = DEFAULT_THRESHOLD,
 ): StopDecision {
-  if (verdict.workRemains < thresholds.workRemains) {
-    return {
-      continueWork: false,
-      probability: verdict.workRemains,
-      reason: "the activity does not show unfinished required work",
-    };
-  }
-
-  const closed = LEGITIMATE_STOP_REASONS.filter(
-    (reason) => (verdict.gates[reason.id] ?? 0) >= thresholds.gate,
-  );
-  if (closed.length > 0) {
-    return {
-      continueWork: false,
-      probability: verdict.workRemains,
-      reason: closed
-        .map((reason) => `${reason.id} (${(verdict.gates[reason.id] ?? 0).toFixed(2)})`)
-        .join(", "),
-    };
-  }
-
-  // The reason is read back from the decision log, so it names the number that decided and
-  // keeps a deferral as a secondary note rather than the headline.
-  const decided = `required work is still unfinished (${verdict.workRemains.toFixed(2)})`;
+  const continueWork = verdict.promise >= threshold;
   return {
-    continueWork: true,
-    probability: verdict.workRemains,
-    reason:
-      verdict.defersWork >= thresholds.gate
-        ? `${decided}, and the message puts it off to later (${verdict.defersWork.toFixed(2)})`
-        : decided,
+    continueWork,
+    probability: verdict.promise,
+    reason: continueWork
+      ? `final reply promises immediate action (${verdict.promise.toFixed(2)})`
+      : `no confident immediate promise (${verdict.promise.toFixed(2)})`,
   };
 }
 
-/**
- * The state one judge request is asked about.
- *
- * A type alias rather than an interface: the SDK accepts an object with a string index
- * signature, and only type aliases pick that signature up automatically.
- */
+/** The only input sent to jev. Context is reserved for the instruction writer. */
 export type StopReviewState = {
-  request: string;
-  activity: string;
+  reply: string;
 };
-
-export function buildReviewState(lastUserMessage: string, agentActivity: string): StopReviewState {
-  return { request: lastUserMessage, activity: agentActivity };
-}
 
 /** Provider id the key is stored under in Pi's auth file. */
 export const TYPESAFE_PROVIDER_ID = "typesafe";
@@ -133,15 +59,7 @@ export interface ResolvedTypeSafeKey {
   source: "environment" | "auth.json";
 }
 
-/**
- * Find the TypeSafe API key.
- *
- * The environment wins, then Pi's own credential store. The store is read through Pi's
- * public helper, so an entry under the provider id `typesafe` in the auth file is picked up
- * without any extra configuration here. TypeSafe is not a chat provider, so `/login` has no
- * entry for it; the key is written into the auth file once, in the same shape as any other
- * API key.
- */
+/** Find the TypeSafe key in the environment or Pi's credential store. */
 export function resolveTypeSafeKey(authPath?: string): ResolvedTypeSafeKey | undefined {
   const fromEnvironment = process.env.TYPESAFE_API_KEY?.trim();
   if (fromEnvironment) return { key: fromEnvironment, source: "environment" };
@@ -153,7 +71,7 @@ export function resolveTypeSafeKey(authPath?: string): ResolvedTypeSafeKey | und
   return key ? { key, source: "auth.json" } : undefined;
 }
 
-/** Thrown when the TypeSafe judge is selected but no API key is available. */
+/** Thrown when the judge has no TypeSafe key. */
 export class TypeSafeNotConfiguredError extends Error {
   constructor() {
     super(
@@ -168,11 +86,11 @@ export type StopJudge = (state: StopReviewState) => Promise<StopVerdict>;
 export interface TypeSafeJudgeOptions {
   /** TypeSafe model override, for example jev-latest. */
   model?: string;
-  /** Key lookup, so a test can run the judge without a real credential. */
+  /** Key lookup, so tests can run without a real credential. */
   resolveKey?: () => ResolvedTypeSafeKey | undefined;
 }
 
-/** The real judge: one TypeSafe request, every question at once, no tool calls. */
+/** Ask jev whether the final reply promises an immediate action. */
 export function createTypeSafeJudge(options: TypeSafeJudgeOptions = {}): StopJudge {
   const resolveKey = options.resolveKey ?? resolveTypeSafeKey;
   return async (state) => {
@@ -181,65 +99,61 @@ export function createTypeSafeJudge(options: TypeSafeJudgeOptions = {}): StopJud
     const client = new TypeSafeClient({ apiKey: resolved.key });
     const result = await client.systemOne({
       state,
-      questions: STOP_QUESTIONS,
+      questions: PROMISE_QUESTIONS,
       ...(options.model ? { model: options.model } : {}),
     });
     const answers = result.answers as Record<string, { noul?: number }>;
-    return {
-      workRemains: answers.work_remains?.noul ?? 0,
-      defersWork: answers.defers_work?.noul ?? 0,
-      gates: Object.fromEntries(
-        LEGITIMATE_STOP_REASONS.map((reason) => [reason.id, answers[reason.id]?.noul ?? 0]),
-      ),
-    };
+    return { promise: answers.promise?.noul ?? 0 };
   };
 }
 
 export interface TypeSafeRunnerOptions {
   /** Replaced in tests; the default talks to TypeSafe. */
   judge?: StopJudge;
-  thresholds?: Partial<StopThresholds>;
+  threshold?: number;
   /** TypeSafe model override, for example jev-latest. */
   model?: string;
-  /** Generates a specific instruction only after TypeSafe decides to continue. */
+  /** Writes an instruction only after jev detects an immediate promise. */
   instructionRunner?: ForemanRunner;
-  /** Called once per decision, with the instruction the agent will receive if there is one. */
+  /** Called once for each successful judgment. */
   onDecision?: (verdict: StopVerdict, decision: StopDecision, instruction?: string) => void;
-  /** Used when the judge cannot answer at all, so a missing service does not disable review. */
-  fallback?: ForemanRunner;
-  /** Called when the judge failed and the fallback took over. */
-  onFallback?: (error: Error) => void;
+  /** Called when jev is unavailable; no other judge takes over. */
+  onUnavailable?: (error: Error) => void;
 }
 
-/** A foreman runner that decides with TypeSafe instead of a nested agent. */
+/** A foreman runner that stays quiet on uncertainty or a failed jev request. */
 export function createTypeSafeRunner(options: TypeSafeRunnerOptions = {}): ForemanRunner {
-  const thresholds: StopThresholds = { ...DEFAULT_THRESHOLDS, ...options.thresholds };
   const judge =
     options.judge ??
     createTypeSafeJudge(options.model === undefined ? {} : { model: options.model });
 
   return {
-    async run(lastUserMessage, agentActivity, signal) {
+    async run(lastUserMessage, agentActivity, finalReply, signal) {
       if (signal?.aborted) return undefined;
 
       let verdict: StopVerdict;
       try {
-        verdict = await judge(buildReviewState(lastUserMessage, agentActivity));
+        verdict = await judge({ reply: finalReply });
       } catch (error) {
-        const failure = error instanceof Error ? error : new Error(String(error));
-        if (!options.fallback) throw failure;
-        options.onFallback?.(failure);
-        return options.fallback.run(lastUserMessage, agentActivity, signal);
+        if (!signal?.aborted) {
+          options.onUnavailable?.(error instanceof Error ? error : new Error(String(error)));
+        }
+        return undefined;
       }
 
       if (signal?.aborted) return undefined;
-      const decision = decideStop(verdict, thresholds);
+      const decision = decideStop(verdict, options.threshold);
       let instruction: string | undefined;
       if (decision.continueWork && options.instructionRunner) {
         try {
-          instruction = await options.instructionRunner.run(lastUserMessage, agentActivity, signal);
+          instruction = await options.instructionRunner.run(
+            lastUserMessage,
+            agentActivity,
+            finalReply,
+            signal,
+          );
         } catch {
-          // A failed generator does not override TypeSafe or send a generic instruction.
+          // A failed instruction cannot turn an uncertain or quiet outcome into a continuation.
         }
       }
       if (signal?.aborted) return undefined;

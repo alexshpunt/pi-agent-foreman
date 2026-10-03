@@ -5,21 +5,11 @@ import { getAgentDir } from "@earendil-works/pi-coding-agent";
 export const THINKING_LEVELS = ["off", "minimal", "low", "medium", "high", "xhigh", "max"] as const;
 export type ForemanThinkingLevel = (typeof THINKING_LEVELS)[number];
 
-/**
- * Which judge reviews a settled run.
- *
- * auto: the TypeSafe judge when a key is configured, the model judge otherwise.
- * model: always the nested model. typesafe: TypeSafe, falling back to the model if it fails.
- */
-export const JUDGES = ["auto", "model", "typesafe"] as const;
-export type ForemanJudge = (typeof JUDGES)[number];
-
 export interface ForemanSettings {
   enabled: boolean;
   model?: string;
   thinking?: ForemanThinkingLevel;
-  judge?: ForemanJudge;
-  /** Minimum probability that required work is unfinished, used by the TypeSafe judge. */
+  /** Minimum probability of an immediate promise in the final reply. */
   threshold?: number;
 }
 
@@ -38,7 +28,6 @@ export function parseSettings(raw: unknown): ForemanSettings {
       : {};
   const model = typeof value.model === "string" ? value.model.trim() : "";
   const thinking = THINKING_LEVELS.find((level) => level === value.thinking);
-  const judge = JUDGES.find((candidate) => candidate === value.judge);
   const threshold =
     typeof value.threshold === "number" &&
     Number.isFinite(value.threshold) &&
@@ -50,7 +39,6 @@ export function parseSettings(raw: unknown): ForemanSettings {
     enabled: booleanOr(value.enabled, true),
     model: model || undefined,
     thinking,
-    judge,
     threshold,
   };
 }

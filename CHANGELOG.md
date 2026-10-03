@@ -2,6 +2,20 @@
 
 Releases before 0.5.0 are described in the [GitHub releases](https://github.com/alexshpunt/pi-agent-foreman/releases).
 
+## 0.5.4 — 2026-10-03
+
+### Added
+
+- Show every Foreman decision, including decisions not to intervene.
+- Expand with Ctrl+O to see the score, threshold, reason, full evaluated reply, user request, work context, and continuation instruction when present.
+- Separate judge input from instruction-writing context with Markdown sections and a tool-style background.
+
+### Changed
+
+- Check only the final assistant reply for a promise of immediate action. No promise means no intervention, even when work is unfinished.
+- Give the separate instruction agent the promised action and bounded context, without asking it to judge task completion again.
+- Add RU/EN promise cases and real-Pi continuation tests.
+
 ## 0.5.3 — 2026-09-27
 
 ### Fixed

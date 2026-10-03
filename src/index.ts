@@ -2,28 +2,78 @@ import {
   type ExtensionAPI,
   type ExtensionContext,
   getAgentDir,
+  getMarkdownTheme,
   SettingsManager,
 } from "@earendil-works/pi-coding-agent";
-import { Text } from "@earendil-works/pi-tui";
+import { Box, Markdown, Text } from "@earendil-works/pi-tui";
 import { createDecisionLog } from "./decisions.ts";
 import type { ModelLike } from "./models.ts";
 import { resolveForemanModel } from "./models.ts";
-import { resolveForemanPrompt } from "./prompt.ts";
 import { createForemanRunner, type ForemanRunner } from "./runner.ts";
 import {
-  type ForemanJudge,
   type ForemanSettings,
   type ForemanThinkingLevel,
-  JUDGES,
   parseSettings,
   THINKING_LEVELS,
   writeGlobalForemanSettings,
 } from "./settings.ts";
 import {
   createTypeSafeRunner,
+  DEFAULT_THRESHOLD,
   resolveTypeSafeKey,
-  TypeSafeNotConfiguredError,
+  type StopDecision,
 } from "./typesafe.ts";
+
+const DECISION_ENTRY = "agent-foreman-decision";
+
+/** Inputs and outcome of one successful judge call, kept out of model context. */
+export interface DecisionDetails extends SettledExchange {
+  decision: StopDecision;
+  threshold: number;
+  instruction?: string;
+}
+
+/** Render the outcome and, when expanded, the exact inputs used by Foreman. */
+export function decisionText(details: DecisionDetails, expanded: boolean): string {
+  const summary = details.instruction
+    ? "⛑ Foreman sent the agent back to work"
+    : details.decision.continueWork
+      ? "⛑ Foreman detected a promise, but no continuation instruction was produced"
+      : "⛑ Foreman decided not to intervene";
+  if (!expanded) return `${summary} · Ctrl+O for full decision details`;
+  const fence = "`".repeat(
+    Math.max(3, ...(details.activity.match(/`+/g) ?? []).map((run) => run.length + 1)),
+  );
+  return [
+    `## ${summary}`,
+    "",
+    `- **Decision:** ${details.decision.continueWork ? "continue work" : "do not intervene"}`,
+    `- **Promise probability:** ${details.decision.probability}`,
+    `- **Threshold:** ${details.threshold}`,
+    `- **Reason:** ${details.decision.reason}`,
+    "",
+    "### Evaluated assistant reply",
+    "",
+    "*Judge evaluates only this last assistant reply.*",
+    "",
+    details.reply,
+    "",
+    "### User request",
+    "",
+    "*Used only to write the continuation instruction. Not evaluated by judge.*",
+    "",
+    details.user,
+    "",
+    "### Work context",
+    "",
+    "*Used only to write the continuation instruction. Not evaluated by judge. Context is bounded.*",
+    "",
+    fence,
+    details.activity,
+    fence,
+    ...(details.instruction ? ["", "### Continuation instruction", "", details.instruction] : []),
+  ].join("\n");
+}
 
 export const CONTINUED_ENTRY = "agent-foreman-continued";
 
@@ -34,6 +84,8 @@ interface SessionReader {
 export interface SettledExchange {
   user: string;
   activity: string;
+  /** Exact final assistant text, kept separate from bounded context. */
+  reply: string;
 }
 
 function messageText(content: unknown): string | undefined {
@@ -69,7 +121,9 @@ function activityLines(message: {
 }): string[] {
   if (message.role === "toolResult") {
     if (typeof message.toolName !== "string") return [];
-    return [`[tool ${message.isError ? "error" : "ok"}] ${message.toolName}`];
+    const status = `[tool ${message.isError ? "error" : "ok"}] ${message.toolName}`;
+    const result = messageText(message.content);
+    return [result ? `${status}: ${shorten(result, TOOL_ARGUMENT_LIMIT)}` : status];
   }
   if (message.role !== "assistant" || !Array.isArray(message.content)) return [];
 
@@ -102,6 +156,7 @@ function activityLines(message: {
 export function settledExchange(ctx: unknown): SettledExchange | undefined {
   const entries = (ctx as SessionReader)?.sessionManager?.getBranch?.() ?? [];
   let finalMessageIndex = -1;
+  let reply = "";
   for (let index = entries.length - 1; index >= 0; index--) {
     const entry = entries[index] as {
       type?: string;
@@ -111,7 +166,8 @@ export function settledExchange(ctx: unknown): SettledExchange | undefined {
     if (entry.message?.role !== "assistant" || entry.message.stopReason === "aborted") {
       return undefined;
     }
-    if (!messageText(entry.message.content)) return undefined;
+    reply = messageText(entry.message.content) ?? "";
+    if (!reply) return undefined;
     finalMessageIndex = index;
     break;
   }
@@ -130,77 +186,56 @@ export function settledExchange(ctx: unknown): SettledExchange | undefined {
       .flatMap((candidate) => {
         const value = candidate as {
           type?: string;
+          customType?: string;
+          content?: unknown;
           message?: Parameters<typeof activityLines>[0];
         };
+        if (value.type === "custom_message" && value.customType === CONTINUED_ENTRY) {
+          const instruction = typeof value.content === "string" ? value.content.trim() : "";
+          return instruction ? [`[foreman] ${instruction}`] : [];
+        }
         return value.type === "message" && value.message ? activityLines(value.message) : [];
       })
       .join("\n");
-    return activity ? { user, activity: shorten(activity, ACTIVITY_LIMIT) } : undefined;
+    return activity ? { user, activity: shorten(activity, ACTIVITY_LIMIT), reply } : undefined;
   }
   return undefined;
 }
 
-/** A nested model that judges a stop or writes an instruction after TypeSafe judges it. */
-async function createModelRunner(
+/** Create the nested model that writes an instruction after jev decides to continue. */
+function createInstructionRunner(
   ctx: ExtensionContext,
   settings: ForemanSettings,
-  instructionOnly = false,
-): Promise<ForemanRunner | undefined> {
+): ForemanRunner | undefined {
   const configured = resolveForemanModel(settings.model, {
     find: (provider, id) => ctx.modelRegistry.find(provider, id),
   });
   const model = configured ?? ctx.model;
   if (!model) return undefined;
-
-  const prompt = instructionOnly
-    ? undefined
-    : resolveForemanPrompt({
-        cwd: ctx.cwd,
-        agentDir: getAgentDir(),
-        projectTrusted: ctx.isProjectTrusted(),
-      });
-  if (prompt?.warning && ctx.hasUI) ctx.ui.notify(prompt.warning, "warning");
-
   return createForemanRunner({
     model,
     thinking: settings.thinking ?? ctx.thinkingLevel,
     cwd: ctx.cwd,
     agentDir: getAgentDir(),
-    ...(prompt ? { systemPrompt: prompt.prompt } : {}),
-    instructionOnly,
   });
 }
 
-/**
- * Build the runner the current settings ask for.
- *
- * The TypeSafe judge keeps the model judge as its fallback, so a missing key, a refused
- * request, or a service that is down leaves the review working the way it did before.
- */
-async function createRunner(
+/** Review the final reply with jev; an unavailable judge leaves the agent alone. */
+function createRunner(
   ctx: ExtensionContext,
   settings: ForemanSettings,
-  onFallback: (error: Error) => void,
-): Promise<ForemanRunner | undefined> {
-  const mode = settings.judge ?? "auto";
-  const modelRunner =
-    mode === "typesafe" || mode === "auto" ? await createModelRunner(ctx, settings) : undefined;
-
-  if (mode === "model") return modelRunner;
-
-  const key = resolveTypeSafeKey();
-  if (mode === "auto" && !key) return modelRunner;
-
+  onUnavailable: (error: Error) => void,
+  onDecision: (decision: StopDecision, instruction?: string) => void,
+): ForemanRunner {
   const log = createDecisionLog(getAgentDir());
   return createTypeSafeRunner({
-    ...(settings.threshold === undefined
-      ? {}
-      : { thresholds: { workRemains: settings.threshold } }),
-    instructionRunner: await createModelRunner(ctx, settings, true),
-    onDecision: (verdict, decision, instruction) =>
-      log({ cwd: ctx.cwd, verdict, decision, instruction }),
-    ...(modelRunner === undefined ? {} : { fallback: modelRunner }),
-    onFallback,
+    threshold: settings.threshold,
+    instructionRunner: createInstructionRunner(ctx, settings),
+    onDecision: (verdict, decision, instruction) => {
+      log({ cwd: ctx.cwd, verdict, decision, instruction });
+      onDecision(decision, instruction);
+    },
+    onUnavailable,
   });
 }
 
@@ -223,7 +258,6 @@ export default function agentForeman(pi: ExtensionAPI) {
   let running = false;
   let stopped = false;
   let keyWarningShown = false;
-  let fallbackNoticeShown = false;
   let activeRun: AbortController | undefined;
 
   pi.registerEntryRenderer(
@@ -232,10 +266,17 @@ export default function agentForeman(pi: ExtensionAPI) {
       new Text(theme.fg("accent", "⛑ Foreman sent the agent back to work"), 1, 0),
   );
 
+  pi.registerEntryRenderer<DecisionDetails>(DECISION_ENTRY, (entry, options, theme) => {
+    if (!entry.data) return undefined;
+    const content = decisionText(entry.data, options.expanded);
+    if (!options.expanded) return new Text(theme.fg("accent", content), 1, 0);
+    const box = new Box(1, 1, (line) => theme.bg("toolSuccessBg", line));
+    box.addChild(new Markdown(content, 0, 0, getMarkdownTheme()));
+    return box;
+  });
   pi.on("session_start", () => {
     stopped = false;
     keyWarningShown = false;
-    fallbackNoticeShown = false;
   });
 
   async function observe(ctx: ExtensionContext): Promise<void> {
@@ -250,33 +291,40 @@ export default function agentForeman(pi: ExtensionAPI) {
     const controller = new AbortController();
     activeRun = controller;
     try {
-      const runner = await createRunner(ctx, settings, (error) => {
-        if (fallbackNoticeShown || !ctx.hasUI) return;
-        ctx.ui.notify(
-          `TypeSafe judge unavailable, using the model judge: ${error.message}`,
-          "warning",
-        );
-        fallbackNoticeShown = true;
-      });
-      if (!runner) return;
-      const instruction = await runner.run(exchange.user, exchange.activity, controller.signal);
-      if (!instruction || stopped || controller.signal.aborted) return;
-      pi.appendEntry(CONTINUED_ENTRY, {});
-      pi.sendMessage(
-        {
-          customType: CONTINUED_ENTRY,
-          content: instruction,
-          display: true,
+      const runner = createRunner(
+        ctx,
+        settings,
+        (error) => {
+          if (keyWarningShown || !ctx.hasUI) return;
+          ctx.ui.notify(
+            `TypeSafe judge unavailable; Foreman stayed quiet: ${error.message}`,
+            "warning",
+          );
+          keyWarningShown = true;
         },
+        (decision, instruction) => {
+          if (stopped || controller.signal.aborted) return;
+          pi.appendEntry<DecisionDetails>(DECISION_ENTRY, {
+            ...exchange,
+            decision,
+            threshold: settings.threshold ?? DEFAULT_THRESHOLD,
+            ...(instruction ? { instruction } : {}),
+          });
+        },
+      );
+      const instruction = await runner.run(
+        exchange.user,
+        exchange.activity,
+        exchange.reply,
+        controller.signal,
+      );
+      if (!instruction || stopped || controller.signal.aborted) return;
+      pi.sendMessage(
+        { customType: CONTINUED_ENTRY, content: instruction, display: true },
         { triggerTurn: true },
       );
     } catch (error) {
-      if (error instanceof TypeSafeNotConfiguredError) {
-        if (!keyWarningShown && ctx.hasUI) {
-          ctx.ui.notify(error.message, "warning");
-          keyWarningShown = true;
-        }
-      } else if (!controller.signal.aborted && ctx.hasUI) {
+      if (!controller.signal.aborted && ctx.hasUI) {
         ctx.ui.notify(`Agent Foreman failed: ${String(error)}`, "warning");
       }
     } finally {
@@ -302,7 +350,6 @@ export default function agentForeman(pi: ExtensionAPI) {
       const action = await ctx.ui.select("Agent Foreman", [
         `Back to Work: ${current.enabled ? "on" : "off"}`,
         `Choose foreman (${activeModel}, ${current.thinking ?? ctx.thinkingLevel})`,
-        `Judge: ${current.judge ?? "auto"}`,
         `TypeSafe key: ${typeSafeKey?.source ?? "missing"}`,
       ]);
       if (!action) return;
@@ -320,19 +367,6 @@ export default function agentForeman(pi: ExtensionAPI) {
             ? `TypeSafe key taken from ${typeSafeKey.source}.`
             : 'No TypeSafe key. Set TYPESAFE_API_KEY, or add { "type": "api_key", "key": "..." } under "typesafe" in Pi\'s auth file.',
           typeSafeKey ? "info" : "warning",
-        );
-        return;
-      }
-
-      if (action.startsWith("Judge:")) {
-        // Three modes, cycled in the order that needs the least thinking: auto first.
-        const order = JUDGES;
-        const position = order.indexOf(current.judge ?? "auto");
-        const judge = order[(position + 1) % order.length] as ForemanJudge;
-        writeGlobalForemanSettings({ ...current, judge });
-        ctx.ui.notify(
-          `Judge: ${judge}.${judge === "model" ? "" : ' The key for TypeSafe comes from TYPESAFE_API_KEY or the "typesafe" entry in Pi\'s auth file.'}`,
-          "info",
         );
         return;
       }

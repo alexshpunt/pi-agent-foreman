@@ -3,15 +3,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { createDecisionLog, DECISIONS_DIRECTORY, DECISIONS_FILE } from "../src/decisions.ts";
-import { LEGITIMATE_STOP_REASONS } from "../src/policy.ts";
 import type { StopDecision, StopVerdict } from "../src/typesafe.ts";
 
-const verdict: StopVerdict = {
-  workRemains: 0.9,
-  defersWork: 0.8,
-  gates: Object.fromEntries(LEGITIMATE_STOP_REASONS.map((reason) => [reason.id, 0.05])),
-};
-const decision: StopDecision = { continueWork: true, probability: 0.9, reason: "unfinished" };
+const verdict: StopVerdict = { promise: 0.9 };
+const decision: StopDecision = { continueWork: true, probability: 0.9, reason: "promise" };
 
 const directories: string[] = [];
 const tempDirectory = (): string => {
