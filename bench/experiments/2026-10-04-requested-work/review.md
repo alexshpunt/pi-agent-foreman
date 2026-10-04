@@ -64,3 +64,7 @@ This is one incident, not evidence that the revised criterion works generally. N
 The continuation writer was not evaluated in this experiment. Its earlier instruction to repeat completed work remains a separate issue.
 
 Runtime source, installed Foreman, and settings were not changed. No prompt-wording regression tests were added.
+
+## Follow-up: unchanged criteria
+
+The user rejected treating this wording experiment as a general fix. A [separate context-only experiment](../2026-10-04-history-without-results/review.md) kept the original criteria, included every tool call and assistant text in the current turn, and omitted tool-result messages. The original incident still triggered continuation in all five repeats. Two simple synthetic completed/unfinished controls behaved as expected, but they did not test or validate the rewritten criterion. No general fix has been accepted or shipped.
