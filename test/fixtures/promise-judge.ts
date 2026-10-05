@@ -28,9 +28,10 @@ export default function promiseJudge(pi: ExtensionAPI) {
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     if (url.endsWith("/v1/systemone")) {
       const body = JSON.parse(String(init?.body)) as {
-        state: { reply?: string; request?: string };
+        state: { reply?: string; request?: string; activity?: string };
+        questions: Record<string, unknown>;
       };
-      if (body.state.request !== undefined) {
+      if (body.questions.explicitCommand !== undefined) {
         appendFileSync(
           join(process.cwd(), "request-inputs.jsonl"),
           `${JSON.stringify(body.state)}\n`,
@@ -53,9 +54,17 @@ export default function promiseJudge(pi: ExtensionAPI) {
       const verdict =
         body.state.reply === "The run is complete."
           ? signals()
-          : process.env.FOREMAN_TEST_SIGNALS
-            ? signals(JSON.parse(process.env.FOREMAN_TEST_SIGNALS))
-            : signals({ plannedAction: body.state.reply === "Continuing the run." ? 0.95 : 0.05 });
+          : process.env.FOREMAN_TEST_SCOPE_VERDICTS
+            ? signals(
+                JSON.parse(process.env.FOREMAN_TEST_SCOPE_VERDICTS)[body.state.request ?? ""] ?? {
+                  unfinished: 0.95,
+                },
+              )
+            : process.env.FOREMAN_TEST_SIGNALS
+              ? signals(JSON.parse(process.env.FOREMAN_TEST_SIGNALS))
+              : signals({
+                  plannedAction: body.state.reply === "Continuing the run." ? 0.95 : 0.05,
+                });
       return new Response(
         JSON.stringify({
           answers: Object.fromEntries(

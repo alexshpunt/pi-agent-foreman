@@ -54,7 +54,7 @@ function parseArgs(argv: string[]): Options {
         break;
       case "--help":
         console.log(
-          "npm run bench -- [--repeat N] [--threshold 0.7] [--group promise,quiet,target] [--case id,...] [--model typesafe/jev-latest]",
+          "npm run bench -- [--repeat N] [--threshold 0.7] [--group promise,quiet,target,scope] [--case id,...] [--model typesafe/jev-latest]",
         );
         process.exit(0);
         break;
@@ -100,7 +100,13 @@ const runCase = async (testCase: BenchCase): Promise<CaseResult> => {
     const started = Date.now();
     const requestProbability = await requestJudge({ request: testCase.request });
     const verdict =
-      requestProbability >= REQUEST_THRESHOLD ? await judge({ reply: testCase.reply }) : undefined;
+      requestProbability >= REQUEST_THRESHOLD
+        ? await judge({
+            request: testCase.request,
+            activity: testCase.activity ?? "",
+            reply: testCase.reply,
+          })
+        : undefined;
     const decision = verdict ? decideStop(verdict, options.threshold) : undefined;
     samples.push({
       requestProbability,

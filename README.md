@@ -15,7 +15,7 @@ Your agent says "Continuing the run" and ends its turn.
 
 **Foreman sends it back to do the work it left unfinished.**
 
-Pi Agent Foreman first checks the **latest user request** for an explicit command to do work. A question alone does not activate Foreman, even if the agent promises to act or reports unfinished work. After a direct command, Foreman checks the **final assistant reply** for an announced next action or explicitly unfinished work. The default classifier is `typesafe/jev-latest`; you can choose another available classifier in Pi. Six reply questions share one classifier request. Blocking signals prevent intervention. Otherwise, a separate Pi agent writes a specific instruction within the user's requested scope.
+Pi Agent Foreman first checks the **latest user request** for an explicit command to do work. A question alone does not activate Foreman, even if the agent promises to act or reports unfinished work. After a direct command, Foreman checks the **final assistant reply** against that request and bounded work activity. Only an announced next action or explicitly unfinished work within the user's request can trigger continuation. The default classifier is `typesafe/jev-latest`; you can choose another available classifier in Pi. Six reply questions share one classifier request. Blocking signals prevent intervention. Otherwise, a separate Pi agent writes a specific instruction within the user's requested scope.
 
 ## Install
 
@@ -29,15 +29,15 @@ installation.
 ## Cost and privacy
 
 When enabled, Foreman sends the latest user request to the selected classifier after each settled
-run. If it finds an explicit work command, a second classifier call receives only the final assistant
-reply. Questions and unclear requests stop after the first call. Neither call includes tool output,
-earlier messages, or private thinking.
+run. If it finds an explicit work command, a second classifier call receives the latest request,
+the final assistant reply, and bounded activity after that request. Questions and unclear requests
+stop after the first call.
 
-A separate Pi agent is called only when the signals allow continuation. That agent
-receives the final reply, the last user request, and bounded activity after that request
-to identify the concrete next or unfinished action. Activity includes assistant text, earlier Foreman
-instructions, compact tool arguments, and excerpts of tool results. These can contain
-private data; size limits do not redact secrets. Private thinking is not included.
+A separate Pi agent is called only when the signals allow continuation. It receives the same
+request, reply, and bounded activity to write an instruction for work still left in the request.
+Activity includes assistant text, earlier Foreman instructions, compact tool arguments, and
+excerpts of tool results. These can contain private data; size limits do not redact secrets.
+Neither the classifier nor the writer receives private thinking or messages before the latest request.
 
 Decisions are stored in `<agent dir>/agent-foreman/decisions.jsonl` with all six signal probabilities.
 
@@ -95,17 +95,18 @@ message, not older permissions or the agent's own promises.
 If the request gate does not pass, Foreman does not review the reply, call the writer,
 or add a decision panel to the session.
 
-Jev answers six questions about the full reply:
-- Is there an announcement of the assistant's next action?
+Jev answers six questions about the final reply, using the request to set the scope and activity as evidence:
+- Is there an announced next action still left within the user's request?
 - Does an obstacle block further work?
 - Is a new user decision or permission needed?
-- Does the reply explicitly say work is unfinished?
+- Does the reply explicitly say a task the user requested is unfinished?
 - Is further action postponed?
 - Does the assistant explicitly refuse or cancel further work?
 
-After the request gate passes, an announced next action **or** explicit unfinished work can trigger continuation.
+After the request gate passes, an announced next action **or** explicit unfinished work within that request can trigger continuation.
 A blocker, permission requirement, postponement, or explicit stop vetoes it.
-A completed-work report does not cancel a next action elsewhere in the reply.
+Completing one requested task does not cancel another requested next action. But the assistant
+cannot add tasks to the user's request: "run and report" does not authorize fixing the failures.
 
 The positive threshold is `0.5` by default. Set `agentForeman.threshold` between `0` and `1`
 to change it. Each blocking signal vetoes at `0.5`, regardless of that setting.
@@ -113,8 +114,8 @@ Foreman does not combine the scores into a made-up probability.
 
 The nested agent writes an instruction only for work explicitly commanded in the latest user request
 and identified in the final reply, using bounded context to resolve its action and scope. It respects restrictions in that
-context and stays quiet if it cannot identify a safe concrete action. It does not resume
-unrelated older work.
+context and stays quiet if the action is already complete, outside the request, or not safe and concrete.
+It does not resume unrelated older work.
 
 Every completed reply review is appended to
 `<agent dir>/agent-foreman/decisions.jsonl` with all six probabilities, the reason,
@@ -122,12 +123,13 @@ and the instruction when one was sent.
 
 ## Tuning the judge
 
-`npm run bench` checks user requests first, then accepted requests' final replies, against the real classifier and compares the outcomes with `bench/cases.ts`. Paired RU/EN cases use the same reply after a question or a direct command. Other cases cover next-action announcements, unfinished work, completed reports, blockers, permission requests, postponement, and refusals. Examples use generic scenarios. A failing case is a tuning target, not a broken build.
+`npm run bench` checks user requests first, then accepted requests' final replies, against the real classifier and compares the outcomes with `bench/cases.ts`. Paired RU/EN cases use the same reply after a question or a direct command. Other cases cover next-action announcements, unfinished work, completed reports, blockers, permission requests, postponement, and refusals. Scope pairs keep the same reply and activity, but change what the user asked for (for example, report failures versus fix them). Examples use generic scenarios. A failing case is a tuning target, not a broken build.
 
 ```sh
 npm run bench                              # all cases, one run each
 npm run bench -- --repeat 3                # stability: three runs per case
 npm run bench -- --group promise,target    # only some groups
+npm run bench -- --group scope --repeat 3  # requested versus unrequested work
 npm run bench -- --case retry-fixed-promises-resume-ru # one case
 npm run bench -- --threshold 0.9           # raise the positive-signal threshold
 ```

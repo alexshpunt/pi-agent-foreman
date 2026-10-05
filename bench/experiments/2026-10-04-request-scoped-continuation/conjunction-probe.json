@@ -1,0 +1,563 @@
+{
+  "model": "opencode/jev-1.13-free",
+  "threshold": 0.5,
+  "questions": {
+    "plannedAction": {
+      "type": "bool",
+      "instructions": "Does the final reply announce a next action that remains to be done within the latest user request? Use the request to determine scope and activity only as evidence of work already done.",
+      "criteria": {
+        "true": "The final reply names the assistant's concrete next action, that action belongs to the latest user request, and it has not already been completed. It still counts when other requested work is complete.",
+        "false": "No unfinished next action within the latest user request is announced. Actions outside that request, already completed actions, earlier announcements in activity, facts, status reports, optional suggestions, refusals, and steps assigned to the user do not count. The assistant's own plans do not expand the user's request."
+      }
+    },
+    "blocker": {
+      "type": "bool",
+      "instructions": "Does the reply report an obstacle that prevents the assistant from carrying out its intended further action?",
+      "criteria": {
+        "true": "The assistant cannot proceed with its intended further action because a needed resource, access, information, dependency, or external result is missing or unavailable.",
+        "false": "No blocking obstacle is reported. Unfinished work or a discovered cause alone is not a blocker. Completed steps, and statements that an already resolved step needs no changes, do not block another intended action. A permission request alone belongs to the separate permission question."
+      }
+    },
+    "permission": {
+      "type": "bool",
+      "instructions": "Does the reply say that the assistant's further action requires a new user decision, confirmation, or permission before proceeding?",
+      "criteria": {
+        "true": "The assistant asks for or waits for user approval, a choice, or confirmation before its further action, including an offer conditional on the user's agreement.",
+        "false": "No new user decision or permission is requested or awaited. Referring to an action already chosen or approved by the user is not a new permission requirement."
+      }
+    },
+    "unfinished": {
+      "type": "bool",
+      "instructions": "Compare the user's requested tasks with the final reply. Does the reply explicitly say that one of those requested tasks is still not done? Activity is evidence of completed work, not permission to add tasks.",
+      "criteria": {
+        "true": "Both conditions hold: the user asked the assistant to perform the task, and the final reply explicitly says that task remains undone.",
+        "false": "Either condition is missing. Mentioning an undone task does not make it a requested task. If all tasks the user requested are complete, this is false even when other work is not done. Do not infer extra tasks from the assistant's own plans or from activity."
+      }
+    },
+    "deferred": {
+      "type": "bool",
+      "instructions": "Does the reply explicitly state that the assistant will do its announced action at a later time or only after a condition is met?",
+      "criteria": {
+        "true": "An explicit future time, waiting condition, or prerequisite postpones the announced action. The reply says when or under what condition the assistant will act instead of proceeding next.",
+        "false": "No explicit postponement of the announced action. Naming a next step is not postponement. Reporting that earlier work has not been done is not postponement. Do not infer a delay merely because the action is still to be performed."
+      }
+    },
+    "explicitStop": {
+      "type": "bool",
+      "instructions": "Does the assistant explicitly state that it will not perform or continue the further work?",
+      "criteria": {
+        "true": "The assistant expressly refuses, cancels, or rules out further action, or says it will respect an instruction to stop. This is a negative intent to act, not merely a report of incomplete work.",
+        "false": "No explicit refusal or cancellation of further work. Reporting that work is not yet done, that an earlier attempt stopped, or that a completed step needs no changes does not itself mean the assistant will not continue."
+      }
+    }
+  },
+  "cases": [
+    {
+      "id": "scope-tests-report",
+      "group": "scope",
+      "request": "Run the tests and report the failures.",
+      "reply": "Ran the tests. Two tests failed. No fixes have been applied.",
+      "activity": "[tool] bash {\"command\":\"npm test\"}\n[tool ok] bash: tests completed, two failures",
+      "expect": "quiet",
+      "why": "the requested test run and report are complete; fixes were not requested"
+    },
+    {
+      "id": "scope-tests-fix",
+      "group": "scope",
+      "request": "Run the tests and fix the failures.",
+      "reply": "Ran the tests. Two tests failed. No fixes have been applied.",
+      "activity": "[tool] bash {\"command\":\"npm test\"}\n[tool ok] bash: tests completed, two failures",
+      "expect": "continue",
+      "why": "the same test report leaves a requested fix incomplete"
+    },
+    {
+      "id": "scope-cause-report",
+      "group": "scope",
+      "request": "Find the cause of duplicate delivery and report it.",
+      "reply": "The duplicate is caused by a second delivery call. The fix has not been applied.",
+      "activity": "[tool] read {\"path\":\"delivery.ts\"}\n[tool ok] read: two delivery calls",
+      "expect": "quiet",
+      "why": "finding and reporting the cause does not require applying a fix"
+    },
+    {
+      "id": "scope-cause-fix",
+      "group": "scope",
+      "request": "Find the cause of duplicate delivery and fix it.",
+      "reply": "The duplicate is caused by a second delivery call. The fix has not been applied.",
+      "activity": "[tool] read {\"path\":\"delivery.ts\"}\n[tool ok] read: two delivery calls",
+      "expect": "continue",
+      "why": "the same cause report leaves the requested fix incomplete"
+    },
+    {
+      "id": "scope-unrequested-next-action",
+      "group": "scope",
+      "request": "Check whether the configuration is valid and report the result.",
+      "reply": "The configuration is valid. Next — install the dependencies.",
+      "activity": "[tool] read {\"path\":\"config.json\"}\n[tool ok] read: valid configuration",
+      "expect": "quiet",
+      "why": "the assistant cannot add an installation to a completed check"
+    },
+    {
+      "id": "scope-requested-next-action",
+      "group": "scope",
+      "request": "Check whether the configuration is valid, then install the dependencies.",
+      "reply": "The configuration is valid. Next — install the dependencies.",
+      "activity": "[tool] read {\"path\":\"config.json\"}\n[tool ok] read: valid configuration",
+      "expect": "continue",
+      "why": "the same announcement is a still-unfinished part of the request"
+    },
+    {
+      "id": "scope-tests-report-ru",
+      "group": "scope",
+      "request": "Запусти тесты и сообщи о падениях.",
+      "reply": "Тесты запущены. Два теста упали. Исправления не внесены.",
+      "activity": "[tool] bash {\"command\":\"npm test\"}\n[tool ok] bash: tests completed, two failures",
+      "expect": "quiet",
+      "why": "the completed Russian test report does not authorize fixes"
+    },
+    {
+      "id": "scope-tests-fix-ru",
+      "group": "scope",
+      "request": "Запусти тесты и исправь падения.",
+      "reply": "Тесты запущены. Два теста упали. Исправления не внесены.",
+      "activity": "[tool] bash {\"command\":\"npm test\"}\n[tool ok] bash: tests completed, two failures",
+      "expect": "continue",
+      "why": "the same Russian reply leaves the requested fixes incomplete"
+    }
+  ],
+  "results": [
+    {
+      "status": "fulfilled",
+      "value": {
+        "id": "scope-tests-report",
+        "expected": "quiet",
+        "result": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.07
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.08
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.04
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.22
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.03
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.06
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791145342632,
+          "usage": {
+            "input": 1101,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1211,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      }
+    },
+    {
+      "status": "fulfilled",
+      "value": {
+        "id": "scope-tests-fix",
+        "expected": "continue",
+        "result": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.1
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.09
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.04
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.94
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.03
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.05
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791145342639,
+          "usage": {
+            "input": 1101,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1211,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      }
+    },
+    {
+      "status": "fulfilled",
+      "value": {
+        "id": "scope-cause-report",
+        "expected": "quiet",
+        "result": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.15
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.09
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.04
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.44
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.04
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.05
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791145342641,
+          "usage": {
+            "input": 1104,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1214,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      }
+    },
+    {
+      "status": "fulfilled",
+      "value": {
+        "id": "scope-cause-fix",
+        "expected": "continue",
+        "result": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.27
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.09
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.05
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.95
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.04
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.05
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791145342642,
+          "usage": {
+            "input": 1104,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1214,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      }
+    },
+    {
+      "status": "fulfilled",
+      "value": {
+        "id": "scope-unrequested-next-action",
+        "expected": "quiet",
+        "result": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.11
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.04
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.05
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.05
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.07
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.02
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791145343447,
+          "usage": {
+            "input": 1098,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1208,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      }
+    },
+    {
+      "status": "fulfilled",
+      "value": {
+        "id": "scope-requested-next-action",
+        "expected": "continue",
+        "result": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.96
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.04
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.04
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.8
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.14
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.02
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791145343461,
+          "usage": {
+            "input": 1099,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1209,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      }
+    },
+    {
+      "status": "fulfilled",
+      "value": {
+        "id": "scope-tests-report-ru",
+        "expected": "quiet",
+        "result": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.07
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.11
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.05
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.13
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.04
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.11
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791145343480,
+          "usage": {
+            "input": 1156,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1266,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      }
+    },
+    {
+      "status": "fulfilled",
+      "value": {
+        "id": "scope-tests-fix-ru",
+        "expected": "continue",
+        "result": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.14
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.12
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.04
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.95
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.04
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.07
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791145343592,
+          "usage": {
+            "input": 1155,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1265,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      }
+    }
+  ],
+  "note": "One probe per case. The final runtime criteria also exclude next-action announcements alone from unfinished; the final full bench was blocked by HTTP 429 before a report was written."
+}

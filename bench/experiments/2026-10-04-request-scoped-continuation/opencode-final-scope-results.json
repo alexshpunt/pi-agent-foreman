@@ -1,0 +1,460 @@
+{
+  "ranAt": "2026-10-05T06:34:44.598Z",
+  "options": {
+    "repeat": 3,
+    "threshold": 0.5,
+    "groups": ["scope"],
+    "cases": null,
+    "model": "opencode/jev-1.13-free"
+  },
+  "results": [
+    {
+      "testCase": {
+        "id": "scope-tests-report",
+        "group": "scope",
+        "request": "Run the tests and report the failures.",
+        "reply": "Ran the tests. Two tests failed. No fixes have been applied.",
+        "activity": "[tool] bash {\"command\":\"npm test\"}\n[tool ok] bash: tests completed, two failures",
+        "expect": "quiet",
+        "why": "the requested test run and report are complete; fixes were not requested"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.05,
+            "blocker": 0.09,
+            "permission": 0.04,
+            "unfinished": 0.21,
+            "deferred": 0.03,
+            "explicitStop": 0.06
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 1063
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.04,
+            "blocker": 0.08,
+            "permission": 0.04,
+            "unfinished": 0.21,
+            "deferred": 0.04,
+            "explicitStop": 0.06
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 733
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.05,
+            "blocker": 0.08,
+            "permission": 0.04,
+            "unfinished": 0.19,
+            "deferred": 0.03,
+            "explicitStop": 0.07
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 883
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "scope-tests-fix",
+        "group": "scope",
+        "request": "Run the tests and fix the failures.",
+        "reply": "Ran the tests. Two tests failed. No fixes have been applied.",
+        "activity": "[tool] bash {\"command\":\"npm test\"}\n[tool ok] bash: tests completed, two failures",
+        "expect": "continue",
+        "why": "the same test report leaves a requested fix incomplete"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.05,
+            "blocker": 0.09,
+            "permission": 0.04,
+            "unfinished": 0.94,
+            "deferred": 0.03,
+            "explicitStop": 0.05
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.94)",
+          "latencyMs": 1055
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.04,
+            "blocker": 0.09,
+            "permission": 0.04,
+            "unfinished": 0.94,
+            "deferred": 0.03,
+            "explicitStop": 0.05
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.94)",
+          "latencyMs": 876
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.04,
+            "blocker": 0.09,
+            "permission": 0.04,
+            "unfinished": 0.94,
+            "deferred": 0.03,
+            "explicitStop": 0.05
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.94)",
+          "latencyMs": 800
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "scope-cause-report",
+        "group": "scope",
+        "request": "Find the cause of duplicate delivery and report it.",
+        "reply": "The duplicate is caused by a second delivery call. The fix has not been applied.",
+        "activity": "[tool] read {\"path\":\"delivery.ts\"}\n[tool ok] read: two delivery calls",
+        "expect": "quiet",
+        "why": "finding and reporting the cause does not require applying a fix"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.94,
+          "verdict": {
+            "plannedAction": 0.06,
+            "blocker": 0.08,
+            "permission": 0.04,
+            "unfinished": 0.4,
+            "deferred": 0.04,
+            "explicitStop": 0.05
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 1066
+        },
+        {
+          "requestProbability": 0.93,
+          "verdict": {
+            "plannedAction": 0.07,
+            "blocker": 0.08,
+            "permission": 0.04,
+            "unfinished": 0.4,
+            "deferred": 0.04,
+            "explicitStop": 0.05
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 964
+        },
+        {
+          "requestProbability": 0.94,
+          "verdict": {
+            "plannedAction": 0.06,
+            "blocker": 0.09,
+            "permission": 0.04,
+            "unfinished": 0.4,
+            "deferred": 0.04,
+            "explicitStop": 0.05
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 744
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "scope-cause-fix",
+        "group": "scope",
+        "request": "Find the cause of duplicate delivery and fix it.",
+        "reply": "The duplicate is caused by a second delivery call. The fix has not been applied.",
+        "activity": "[tool] read {\"path\":\"delivery.ts\"}\n[tool ok] read: two delivery calls",
+        "expect": "continue",
+        "why": "the same cause report leaves the requested fix incomplete"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.95,
+          "verdict": {
+            "plannedAction": 0.09,
+            "blocker": 0.08,
+            "permission": 0.05,
+            "unfinished": 0.95,
+            "deferred": 0.04,
+            "explicitStop": 0.05
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.95)",
+          "latencyMs": 1102
+        },
+        {
+          "requestProbability": 0.95,
+          "verdict": {
+            "plannedAction": 0.09,
+            "blocker": 0.09,
+            "permission": 0.05,
+            "unfinished": 0.94,
+            "deferred": 0.04,
+            "explicitStop": 0.06
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.94)",
+          "latencyMs": 802
+        },
+        {
+          "requestProbability": 0.95,
+          "verdict": {
+            "plannedAction": 0.09,
+            "blocker": 0.09,
+            "permission": 0.05,
+            "unfinished": 0.95,
+            "deferred": 0.04,
+            "explicitStop": 0.05
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.95)",
+          "latencyMs": 758
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "scope-unrequested-next-action",
+        "group": "scope",
+        "request": "Check whether the configuration is valid and report the result.",
+        "reply": "The configuration is valid. Next — install the dependencies.",
+        "activity": "[tool] read {\"path\":\"config.json\"}\n[tool ok] read: valid configuration",
+        "expect": "quiet",
+        "why": "the assistant cannot add an installation to a completed check"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.94,
+          "verdict": {
+            "plannedAction": 0.28,
+            "blocker": 0.04,
+            "permission": 0.05,
+            "unfinished": 0.04,
+            "deferred": 0.07,
+            "explicitStop": 0.02
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 812
+        },
+        {
+          "requestProbability": 0.94,
+          "verdict": {
+            "plannedAction": 0.27,
+            "blocker": 0.04,
+            "permission": 0.05,
+            "unfinished": 0.05,
+            "deferred": 0.07,
+            "explicitStop": 0.02
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 730
+        },
+        {
+          "requestProbability": 0.94,
+          "verdict": {
+            "plannedAction": 0.28,
+            "blocker": 0.04,
+            "permission": 0.05,
+            "unfinished": 0.04,
+            "deferred": 0.07,
+            "explicitStop": 0.02
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 796
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "scope-requested-next-action",
+        "group": "scope",
+        "request": "Check whether the configuration is valid, then install the dependencies.",
+        "reply": "The configuration is valid. Next — install the dependencies.",
+        "activity": "[tool] read {\"path\":\"config.json\"}\n[tool ok] read: valid configuration",
+        "expect": "continue",
+        "why": "the same announcement is a still-unfinished part of the request"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.96,
+            "blocker": 0.04,
+            "permission": 0.05,
+            "unfinished": 0.5,
+            "deferred": 0.13,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.96), Unfinished work (0.50)",
+          "latencyMs": 670
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.96,
+            "blocker": 0.04,
+            "permission": 0.04,
+            "unfinished": 0.5,
+            "deferred": 0.12,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.96), Unfinished work (0.50)",
+          "latencyMs": 855
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.96,
+            "blocker": 0.04,
+            "permission": 0.05,
+            "unfinished": 0.57,
+            "deferred": 0.15,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.96), Unfinished work (0.57)",
+          "latencyMs": 807
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "scope-tests-report-ru",
+        "group": "scope",
+        "request": "Запусти тесты и сообщи о падениях.",
+        "reply": "Тесты запущены. Два теста упали. Исправления не внесены.",
+        "activity": "[tool] bash {\"command\":\"npm test\"}\n[tool ok] bash: tests completed, two failures",
+        "expect": "quiet",
+        "why": "the completed Russian test report does not authorize fixes"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.05,
+            "blocker": 0.11,
+            "permission": 0.05,
+            "unfinished": 0.16,
+            "deferred": 0.04,
+            "explicitStop": 0.11
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 730
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.06,
+            "blocker": 0.11,
+            "permission": 0.05,
+            "unfinished": 0.15,
+            "deferred": 0.04,
+            "explicitStop": 0.1
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 743
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.06,
+            "blocker": 0.1,
+            "permission": 0.05,
+            "unfinished": 0.14,
+            "deferred": 0.04,
+            "explicitStop": 0.11
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 891
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "scope-tests-fix-ru",
+        "group": "scope",
+        "request": "Запусти тесты и исправь падения.",
+        "reply": "Тесты запущены. Два теста упали. Исправления не внесены.",
+        "activity": "[tool] bash {\"command\":\"npm test\"}\n[tool ok] bash: tests completed, two failures",
+        "expect": "continue",
+        "why": "the same Russian reply leaves the requested fixes incomplete"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.06,
+            "blocker": 0.13,
+            "permission": 0.05,
+            "unfinished": 0.95,
+            "deferred": 0.04,
+            "explicitStop": 0.07
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.95)",
+          "latencyMs": 712
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.07,
+            "blocker": 0.12,
+            "permission": 0.05,
+            "unfinished": 0.95,
+            "deferred": 0.04,
+            "explicitStop": 0.07
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.95)",
+          "latencyMs": 810
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.07,
+            "blocker": 0.13,
+            "permission": 0.05,
+            "unfinished": 0.95,
+            "deferred": 0.04,
+            "explicitStop": 0.07
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.95)",
+          "latencyMs": 921
+        }
+      ],
+      "passed": true
+    }
+  ]
+}

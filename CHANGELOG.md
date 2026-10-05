@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Judge remaining work against the latest user request, rather than any work mentioned in the reply.
+- Keep the assistant's own next steps from expanding a completed request.
+- Give the reply judge bounded activity as evidence and have the instruction writer check that the action is still unfinished.
+
+### Changed
+
+- Send the latest request and bounded activity, including compact tool results, to the reply classifier.
+- Add paired classifier cases that distinguish reporting findings from applying fixes.
+
 ## 0.5.8 — 2026-10-03
 
 ### Fixed

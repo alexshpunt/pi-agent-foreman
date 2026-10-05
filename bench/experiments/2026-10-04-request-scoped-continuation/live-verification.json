@@ -1,0 +1,97 @@
+{
+  "reloaded": true,
+  "command": "pi-test live --once --stream-profile gemini-3.5-flash -- vitest run test/promise.integration.test.ts -t 'reviews the same work'",
+  "externalEndpointsStubbed": true,
+  "cases": [
+    {
+      "name": "scope-report",
+      "sessionId": "01a10ac4-d037-72e6-9a2c-7a6e81e50fb7",
+      "decisions": [
+        {
+          "user": "Find the cause.",
+          "activity": "[tool] read {\"path\":\"cause.txt\"}\n[tool ok] read: Duplicate delivery comes from a second call.\n[assistant] The cause is known. The fix has not been applied.",
+          "reply": "The cause is known. The fix has not been applied.",
+          "decision": {
+            "continueWork": false,
+            "signals": {
+              "plannedAction": 0.05,
+              "blocker": 0.05,
+              "permission": 0.05,
+              "unfinished": 0.05,
+              "deferred": 0.05,
+              "explicitStop": 0.05
+            },
+            "reason": "no confident next action or explicit unfinished work"
+          },
+          "classifier": "typesafe/jev-latest",
+          "threshold": 0.5
+        }
+      ],
+      "continuationCount": 0,
+      "headers": ["⛑ Foreman decided not to intervene · Ctrl+O for full decision details"]
+    },
+    {
+      "name": "scope-fix",
+      "sessionId": "01a10ac4-d4e5-7028-8d3d-2a839663aedc",
+      "decisions": [
+        {
+          "user": "Find and fix the cause.",
+          "activity": "[tool] read {\"path\":\"cause.txt\"}\n[tool ok] read: Duplicate delivery comes from a second call.\n[assistant] The cause is known. The fix has not been applied.",
+          "reply": "The cause is known. The fix has not been applied.",
+          "decision": {
+            "continueWork": true,
+            "signals": {
+              "plannedAction": 0.05,
+              "blocker": 0.05,
+              "permission": 0.05,
+              "unfinished": 0.95,
+              "deferred": 0.05,
+              "explicitStop": 0.05
+            },
+            "reason": "continue for Unfinished work (0.95)"
+          },
+          "classifier": "typesafe/jev-latest",
+          "threshold": 0.5,
+          "instruction": "Start the promised run now."
+        },
+        {
+          "user": "Find and fix the cause.",
+          "activity": "[tool] read {\"path\":\"cause.txt\"}\n[tool ok] read: Duplicate delivery comes from a second call.\n[assistant] The cause is known. The fix has not been applied.\n[foreman] Start the promised run now.\n[assistant] The run is complete.",
+          "reply": "The run is complete.",
+          "decision": {
+            "continueWork": false,
+            "signals": {
+              "plannedAction": 0.05,
+              "blocker": 0.05,
+              "permission": 0.05,
+              "unfinished": 0.05,
+              "deferred": 0.05,
+              "explicitStop": 0.05
+            },
+            "reason": "no confident next action or explicit unfinished work"
+          },
+          "classifier": "typesafe/jev-latest",
+          "threshold": 0.5
+        }
+      ],
+      "continuationCount": 1,
+      "headers": [
+        "⛑ Foreman sent the agent back to work · Ctrl+O for full decision details",
+        "⛑ Foreman decided not to intervene · Ctrl+O for full decision details"
+      ]
+    }
+  ],
+  "humanPane": {
+    "id": "w3J6:p6",
+    "revision": 143,
+    "cells": "298x108",
+    "visible": "The nested real-Pi test's quiet Foreman header was visible in the terminal tool output. This is not a production classifier decision."
+  },
+  "replay": {
+    "scopeReportFrames": 12,
+    "scopeFixFrames": 15,
+    "panelsAgree": true,
+    "finalScreenMatchesExactly": false,
+    "note": "Reconstruction differs in startup/footer rows, not the Foreman panels."
+  }
+}
