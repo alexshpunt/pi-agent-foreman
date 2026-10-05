@@ -40,7 +40,7 @@ describe("decideStop", () => {
 });
 
 describe("createClassifierRunner", () => {
-  it("judges only the final reply and calls the writer after an unfinished-work decision", async () => {
+  it("gives the judge the current request and activity before writing an instruction", async () => {
     const verdict = signals({ unfinished: 0.97 });
     const judge = vi.fn(async () => verdict);
     const instructionRunner = { run: vi.fn(async () => "Fix the duplicate delivery now.") };
@@ -55,7 +55,10 @@ describe("createClassifierRunner", () => {
     await expect(runner.run("Fix it.", "Checked the delivery path.", reply)).resolves.toBe(
       "Fix the duplicate delivery now.",
     );
-    expect(judge).toHaveBeenCalledWith({ reply }, undefined);
+    expect(judge).toHaveBeenCalledWith(
+      { request: "Fix it.", activity: "Checked the delivery path.", reply },
+      undefined,
+    );
     expect(instructionRunner.run).toHaveBeenCalledWith(
       "Fix it.",
       "Checked the delivery path.",
@@ -110,6 +113,33 @@ describe("createClassifierRunner", () => {
       instructionRunner: { run: async () => undefined },
     });
     await expect(runner.run("Run tests.", "Context.", "Running tests.")).resolves.toBeUndefined();
+  });
+});
+
+describe("request-scoped continuation", () => {
+  it("uses the same reply with different requests without starting unrelated work", async () => {
+    const reply = "The cause is known. The fix has not been applied.";
+    const activity = "[tool ok] read: found the cause";
+    const instructionRunner = { run: vi.fn(async () => "Apply the requested fix.") };
+    const runner = createClassifierRunner({
+      requestJudge: async () => 0.99,
+      judge: async (state) =>
+        signals({ unfinished: state.request === "Find and fix the cause." ? 0.95 : 0.05 }),
+      instructionRunner,
+    });
+
+    await expect(runner.run("Find the cause.", activity, reply)).resolves.toBeUndefined();
+    expect(instructionRunner.run).not.toHaveBeenCalled();
+    await expect(runner.run("Find and fix the cause.", activity, reply)).resolves.toBe(
+      "Apply the requested fix.",
+    );
+    expect(instructionRunner.run).toHaveBeenCalledOnce();
+    expect(instructionRunner.run).toHaveBeenCalledWith(
+      "Find and fix the cause.",
+      activity,
+      reply,
+      undefined,
+    );
   });
 });
 
@@ -183,15 +213,15 @@ describe("createClassifierJudge", () => {
     >[0]["classify"];
     const signal = new AbortController().signal;
     const judge = createClassifierJudge({ findOfType, classify }, "openrouter/typesafe/jev-1.13");
-    await expect(judge({ reply: "Continuing." }, signal)).resolves.toEqual(
-      signals({ plannedAction: 0.91 }),
-    );
+    await expect(
+      judge({ request: "Finish the requested work.", activity: "", reply: "Continuing." }, signal),
+    ).resolves.toEqual(signals({ plannedAction: 0.91 }));
     expect(findOfType).toHaveBeenCalledWith("classifier", "openrouter", "typesafe/jev-1.13");
     expect(classify).toHaveBeenCalledTimes(1);
     expect(classify).toHaveBeenCalledWith(
       model,
       {
-        state: { reply: "Continuing." },
+        state: { request: "Finish the requested work.", activity: "", reply: "Continuing." },
         questions: expect.objectContaining(
           Object.fromEntries(
             Object.keys(signals()).map((key) => [key, expect.objectContaining({ type: "bool" })]),
@@ -211,7 +241,11 @@ describe("createClassifierJudge", () => {
         typeof createClassifierJudge
       >[0]["classify"];
       await expect(
-        createClassifierJudge({ findOfType: () => model, classify })({ reply: "Continue." }),
+        createClassifierJudge({ findOfType: () => model, classify })({
+          request: "Finish the requested work.",
+          activity: "",
+          reply: "Continue.",
+        }),
       ).rejects.toThrow("invalid");
     },
   );
@@ -223,7 +257,11 @@ describe("createClassifierJudge", () => {
         response({ ...answers(), permission: { type: "bool", probability } }),
       ) as unknown as Parameters<typeof createClassifierJudge>[0]["classify"];
       await expect(
-        createClassifierJudge({ findOfType: () => model, classify })({ reply: "Continue." }),
+        createClassifierJudge({ findOfType: () => model, classify })({
+          request: "Finish the requested work.",
+          activity: "",
+          reply: "Continue.",
+        }),
       ).rejects.toThrow("invalid");
     },
   );
@@ -233,7 +271,11 @@ describe("createClassifierJudge", () => {
       response({ ...answers(), blocker: { type: "choice", choice: "no" } }),
     ) as unknown as Parameters<typeof createClassifierJudge>[0]["classify"];
     await expect(
-      createClassifierJudge({ findOfType: () => model, classify })({ reply: "Continue." }),
+      createClassifierJudge({ findOfType: () => model, classify })({
+        request: "Finish the requested work.",
+        activity: "",
+        reply: "Continue.",
+      }),
     ).rejects.toThrow("invalid");
   });
 
@@ -243,7 +285,7 @@ describe("createClassifierJudge", () => {
       createClassifierJudge(
         { findOfType: () => undefined, classify },
         "missing/model",
-      )({ reply: "Continue." }),
+      )({ request: "Finish the requested work.", activity: "", reply: "Continue." }),
     ).rejects.toThrow("Classifier not found");
     expect(classify).not.toHaveBeenCalled();
   });
@@ -255,7 +297,11 @@ describe("createClassifierJudge", () => {
       errorMessage: "Provider unavailable",
     })) as unknown as Parameters<typeof createClassifierJudge>[0]["classify"];
     await expect(
-      createClassifierJudge({ findOfType: () => model, classify })({ reply: "Continue." }),
+      createClassifierJudge({ findOfType: () => model, classify })({
+        request: "Finish the requested work.",
+        activity: "",
+        reply: "Continue.",
+      }),
     ).rejects.toThrow("Provider unavailable");
   });
 });

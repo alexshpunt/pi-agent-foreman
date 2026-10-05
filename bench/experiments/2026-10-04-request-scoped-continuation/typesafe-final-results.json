@@ -1,0 +1,3777 @@
+{
+  "questions": {
+    "plannedAction": {
+      "type": "bool",
+      "instructions": "The assistant's turn has ended. Is there a next-action announcement anywhere in the final reply for work within the latest user request? Activity is evidence of completed work, not permission to add tasks.",
+      "criteria": {
+        "true": "The assistant names a concrete action or work item as its next step, and the user requested that work. The announcement may be a short sentence naming the next work, without saying 'I will'. It still counts when the rest of the reply reports other completed work.",
+        "false": "There is no announced next action within the user's request, or that action is already completed. Facts, status reports, optional suggestions, quoted past announcements, refusals, and next steps assigned to the user do not count. The assistant's own plans do not expand the user's request."
+      }
+    },
+    "blocker": {
+      "type": "bool",
+      "instructions": "Does the reply report an obstacle that prevents the assistant from carrying out its intended further action?",
+      "criteria": {
+        "true": "The assistant cannot proceed with its intended further action because a needed resource, access, information, dependency, or external result is missing or unavailable.",
+        "false": "No blocking obstacle is reported. Unfinished work or a discovered cause alone is not a blocker. Completed steps, and statements that an already resolved step needs no changes, do not block another intended action. A permission request alone belongs to the separate permission question."
+      }
+    },
+    "permission": {
+      "type": "bool",
+      "instructions": "Does the reply say that the assistant's further action requires a new user decision, confirmation, or permission before proceeding?",
+      "criteria": {
+        "true": "The assistant asks for or waits for user approval, a choice, or confirmation before its further action, including an offer conditional on the user's agreement.",
+        "false": "No new user decision or permission is requested or awaited. Referring to an action already chosen or approved by the user is not a new permission requirement."
+      }
+    },
+    "unfinished": {
+      "type": "bool",
+      "instructions": "Compare the user's requested tasks with the final reply. Does the reply explicitly say that one of those requested tasks is still not done? Activity is evidence of completed work, not permission to add tasks.",
+      "criteria": {
+        "true": "Both conditions hold: the user asked the assistant to perform the task, and the final reply explicitly says that task remains undone.",
+        "false": "Either condition is missing. Mentioning an undone task does not make it a requested task. If all tasks the user requested are complete, this is false even when other work is not done. Do not infer extra tasks from the assistant's own plans or from activity. A next-action announcement alone is not an explicit report that a requested task is incomplete."
+      }
+    },
+    "deferred": {
+      "type": "bool",
+      "instructions": "Does the reply explicitly state that the assistant will do its announced action at a later time or only after a condition is met?",
+      "criteria": {
+        "true": "An explicit future time, waiting condition, or prerequisite postpones the announced action. The reply says when or under what condition the assistant will act instead of proceeding next.",
+        "false": "No explicit postponement of the announced action. Naming a next step is not postponement. Reporting that earlier work has not been done is not postponement. Do not infer a delay merely because the action is still to be performed."
+      }
+    },
+    "explicitStop": {
+      "type": "bool",
+      "instructions": "Does the assistant explicitly state that it will not perform or continue the further work?",
+      "criteria": {
+        "true": "The assistant expressly refuses, cancels, or rules out further action, or says it will respect an instruction to stop. This is a negative intent to act, not merely a report of incomplete work.",
+        "false": "No explicit refusal or cancellation of further work. Reporting that work is not yet done, that an earlier attempt stopped, or that a completed step needs no changes does not itself mean the assistant will not continue."
+      }
+    }
+  },
+  "ranAt": "2026-10-04T20:58:02.362Z",
+  "options": {
+    "repeat": 5,
+    "threshold": 0.5,
+    "groups": null,
+    "cases": null,
+    "model": "typesafe/jev-latest"
+  },
+  "results": [
+    {
+      "testCase": {
+        "id": "configured-next-install",
+        "request": "Check the sudo configuration, install the dependencies, and upgrade Node.js to version 24.",
+        "group": "target",
+        "reply": "Already configured: I checked over SSH, and the test account has this rule:\n\n```text\n(ALL) NOPASSWD: ALL\n```\n\n`sudo -n true` succeeds without a password. **No changes are needed.** The `sudo` command is still required, but it no longer asks for a password, including during automated connections.\n\nNext — install the dependencies and upgrade the system Node.js to version 24, as you selected.",
+        "expect": "continue",
+        "why": "an implicit next action at the end of a completed setup report"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.95,
+            "blocker": 0.05,
+            "permission": 0.05,
+            "unfinished": 0.38,
+            "deferred": 0.07,
+            "explicitStop": 0.03
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.95)",
+          "latencyMs": 708
+        },
+        {
+          "requestProbability": 0.96,
+          "verdict": {
+            "plannedAction": 0.95,
+            "blocker": 0.05,
+            "permission": 0.05,
+            "unfinished": 0.45,
+            "deferred": 0.07,
+            "explicitStop": 0.03
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.95)",
+          "latencyMs": 524
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.95,
+            "blocker": 0.05,
+            "permission": 0.05,
+            "unfinished": 0.43,
+            "deferred": 0.07,
+            "explicitStop": 0.03
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.95)",
+          "latencyMs": 663
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.95,
+            "blocker": 0.05,
+            "permission": 0.05,
+            "unfinished": 0.39,
+            "deferred": 0.07,
+            "explicitStop": 0.03
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.95)",
+          "latencyMs": 436
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.94,
+            "blocker": 0.05,
+            "permission": 0.05,
+            "unfinished": 0.45,
+            "deferred": 0.07,
+            "explicitStop": 0.03
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.94)",
+          "latencyMs": 543
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "installed-next-transfer",
+        "request": "Set up the test machine, transfer the working sources, and run the benchmark checks there.",
+        "group": "target",
+        "reply": "Installed and checked on the test machine:\n\n- Node.js 24 and npm 11;\n- Clang and clangd 18;\n- Bubblewrap 0.9.\n\nIsolation works without root: Node runs, and a small C++17 project builds and executes. Package integrity checks passed; both coding tools start.\n\nNo heavy runs were performed, and the laptop was not put under load. Next — transfer the working sources and run the benchmark checks on the test machine.",
+        "expect": "continue",
+        "why": "a long completed-work report still announces further work"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.94,
+            "blocker": 0.06,
+            "permission": 0.06,
+            "unfinished": 0.8,
+            "deferred": 0.21,
+            "explicitStop": 0.03
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.94), Unfinished work (0.80)",
+          "latencyMs": 705
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.94,
+            "blocker": 0.06,
+            "permission": 0.06,
+            "unfinished": 0.81,
+            "deferred": 0.19,
+            "explicitStop": 0.03
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.94), Unfinished work (0.81)",
+          "latencyMs": 525
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.93,
+            "blocker": 0.07,
+            "permission": 0.06,
+            "unfinished": 0.79,
+            "deferred": 0.22,
+            "explicitStop": 0.03
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.93), Unfinished work (0.79)",
+          "latencyMs": 528
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.94,
+            "blocker": 0.06,
+            "permission": 0.06,
+            "unfinished": 0.8,
+            "deferred": 0.19,
+            "explicitStop": 0.03
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.94), Unfinished work (0.80)",
+          "latencyMs": 451
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.94,
+            "blocker": 0.06,
+            "permission": 0.06,
+            "unfinished": 0.82,
+            "deferred": 0.22,
+            "explicitStop": 0.03
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.94), Unfinished work (0.82)",
+          "latencyMs": 662
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "cause-found-not-fixed",
+        "request": "Find and fix duplicate delivery.",
+        "group": "target",
+        "reply": "No. I found the cause, but have not fixed the duplicate yet. The latest commit changes context and rendering, not repeated delivery.",
+        "expect": "continue",
+        "why": "explicit unfinished work without an announced next action"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.96,
+          "verdict": {
+            "plannedAction": 0.11,
+            "blocker": 0.11,
+            "permission": 0.05,
+            "unfinished": 0.93,
+            "deferred": 0.07,
+            "explicitStop": 0.07
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.93)",
+          "latencyMs": 804
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.13,
+            "blocker": 0.12,
+            "permission": 0.05,
+            "unfinished": 0.93,
+            "deferred": 0.07,
+            "explicitStop": 0.07
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.93)",
+          "latencyMs": 470
+        },
+        {
+          "requestProbability": 0.96,
+          "verdict": {
+            "plannedAction": 0.17,
+            "blocker": 0.11,
+            "permission": 0.05,
+            "unfinished": 0.92,
+            "deferred": 0.07,
+            "explicitStop": 0.08
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.92)",
+          "latencyMs": 441
+        },
+        {
+          "requestProbability": 0.96,
+          "verdict": {
+            "plannedAction": 0.13,
+            "blocker": 0.12,
+            "permission": 0.05,
+            "unfinished": 0.93,
+            "deferred": 0.06,
+            "explicitStop": 0.08
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.93)",
+          "latencyMs": 439
+        },
+        {
+          "requestProbability": 0.96,
+          "verdict": {
+            "plannedAction": 0.12,
+            "blocker": 0.12,
+            "permission": 0.05,
+            "unfinished": 0.93,
+            "deferred": 0.07,
+            "explicitStop": 0.08
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.93)",
+          "latencyMs": 556
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "completed-fix",
+        "request": "Fix duplicate delivery and verify the result.",
+        "group": "quiet",
+        "reply": "Fixed the duplicate. Repeated delivery no longer occurs. The check passed.",
+        "expect": "quiet",
+        "why": "completed work with no announced next action"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.03,
+            "blocker": 0.04,
+            "permission": 0.03,
+            "unfinished": 0.02,
+            "deferred": 0.03,
+            "explicitStop": 0.04
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 747
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.04,
+            "blocker": 0.03,
+            "permission": 0.03,
+            "unfinished": 0.02,
+            "deferred": 0.03,
+            "explicitStop": 0.04
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 616
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.03,
+            "blocker": 0.03,
+            "permission": 0.03,
+            "unfinished": 0.02,
+            "deferred": 0.02,
+            "explicitStop": 0.04
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 445
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.04,
+            "blocker": 0.03,
+            "permission": 0.03,
+            "unfinished": 0.02,
+            "deferred": 0.03,
+            "explicitStop": 0.04
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 442
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.03,
+            "blocker": 0.03,
+            "permission": 0.03,
+            "unfinished": 0.02,
+            "deferred": 0.03,
+            "explicitStop": 0.04
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 623
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "unfinished-fix",
+        "request": "Find and fix duplicate delivery.",
+        "group": "promise",
+        "reply": "I found the cause, but have not fixed the duplicate yet.",
+        "expect": "continue",
+        "why": "explicit unfinished work is a positive signal"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.96,
+          "verdict": {
+            "plannedAction": 0.28,
+            "blocker": 0.09,
+            "permission": 0.05,
+            "unfinished": 0.93,
+            "deferred": 0.06,
+            "explicitStop": 0.05
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.93)",
+          "latencyMs": 418
+        },
+        {
+          "requestProbability": 0.96,
+          "verdict": {
+            "plannedAction": 0.26,
+            "blocker": 0.09,
+            "permission": 0.05,
+            "unfinished": 0.94,
+            "deferred": 0.06,
+            "explicitStop": 0.04
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.94)",
+          "latencyMs": 515
+        },
+        {
+          "requestProbability": 0.96,
+          "verdict": {
+            "plannedAction": 0.25,
+            "blocker": 0.09,
+            "permission": 0.05,
+            "unfinished": 0.93,
+            "deferred": 0.06,
+            "explicitStop": 0.04
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.93)",
+          "latencyMs": 406
+        },
+        {
+          "requestProbability": 0.96,
+          "verdict": {
+            "plannedAction": 0.28,
+            "blocker": 0.09,
+            "permission": 0.05,
+            "unfinished": 0.94,
+            "deferred": 0.06,
+            "explicitStop": 0.04
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.94)",
+          "latencyMs": 450
+        },
+        {
+          "requestProbability": 0.96,
+          "verdict": {
+            "plannedAction": 0.24,
+            "blocker": 0.09,
+            "permission": 0.05,
+            "unfinished": 0.93,
+            "deferred": 0.06,
+            "explicitStop": 0.04
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.93)",
+          "latencyMs": 454
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "next-action-needs-permission",
+        "request": "Prepare the Node.js upgrade, but ask before changing the system installation.",
+        "group": "quiet",
+        "reply": "Next — upgrade the system Node.js. Confirm whether I may change the system installation; I will not start before confirmation.",
+        "expect": "quiet",
+        "why": "the next action requires a new permission"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.82,
+          "verdict": {
+            "plannedAction": 0.87,
+            "blocker": 0.26,
+            "permission": 0.97,
+            "unfinished": 0.24,
+            "deferred": 0.96,
+            "explicitStop": 0.69
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Permission needed (0.97), Postponed action (0.96), Explicit stop (0.69)",
+          "latencyMs": 448
+        },
+        {
+          "requestProbability": 0.81,
+          "verdict": {
+            "plannedAction": 0.85,
+            "blocker": 0.28,
+            "permission": 0.97,
+            "unfinished": 0.26,
+            "deferred": 0.96,
+            "explicitStop": 0.73
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Permission needed (0.97), Postponed action (0.96), Explicit stop (0.73)",
+          "latencyMs": 477
+        },
+        {
+          "requestProbability": 0.82,
+          "verdict": {
+            "plannedAction": 0.86,
+            "blocker": 0.26,
+            "permission": 0.97,
+            "unfinished": 0.26,
+            "deferred": 0.96,
+            "explicitStop": 0.73
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Permission needed (0.97), Postponed action (0.96), Explicit stop (0.73)",
+          "latencyMs": 406
+        },
+        {
+          "requestProbability": 0.8,
+          "verdict": {
+            "plannedAction": 0.87,
+            "blocker": 0.27,
+            "permission": 0.97,
+            "unfinished": 0.23,
+            "deferred": 0.96,
+            "explicitStop": 0.73
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Permission needed (0.97), Postponed action (0.96), Explicit stop (0.73)",
+          "latencyMs": 427
+        },
+        {
+          "requestProbability": 0.83,
+          "verdict": {
+            "plannedAction": 0.87,
+            "blocker": 0.28,
+            "permission": 0.97,
+            "unfinished": 0.25,
+            "deferred": 0.96,
+            "explicitStop": 0.74
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Permission needed (0.97), Postponed action (0.96), Explicit stop (0.74)",
+          "latencyMs": 445
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "next-action-blocked",
+        "request": "Transfer the sources to the test machine.",
+        "group": "quiet",
+        "reply": "Next — transfer the sources. But SSH is unavailable, so I cannot transfer them now.",
+        "expect": "quiet",
+        "why": "an access blocker prevents the announced action"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.78,
+            "blocker": 0.97,
+            "permission": 0.08,
+            "unfinished": 0.9,
+            "deferred": 0.51,
+            "explicitStop": 0.21
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Blocker (0.97), Postponed action (0.51)",
+          "latencyMs": 483
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.8,
+            "blocker": 0.97,
+            "permission": 0.09,
+            "unfinished": 0.89,
+            "deferred": 0.56,
+            "explicitStop": 0.22
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Blocker (0.97), Postponed action (0.56)",
+          "latencyMs": 459
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.8,
+            "blocker": 0.97,
+            "permission": 0.08,
+            "unfinished": 0.89,
+            "deferred": 0.49,
+            "explicitStop": 0.2
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Blocker (0.97)",
+          "latencyMs": 451
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.82,
+            "blocker": 0.97,
+            "permission": 0.08,
+            "unfinished": 0.89,
+            "deferred": 0.53,
+            "explicitStop": 0.22
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Blocker (0.97), Postponed action (0.53)",
+          "latencyMs": 476
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.8,
+            "blocker": 0.97,
+            "permission": 0.09,
+            "unfinished": 0.89,
+            "deferred": 0.55,
+            "explicitStop": 0.22
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Blocker (0.97), Postponed action (0.55)",
+          "latencyMs": 427
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "next-action-delayed",
+        "request": "Transfer the sources next week.",
+        "group": "quiet",
+        "reply": "I will transfer the sources next week.",
+        "expect": "quiet",
+        "why": "the action is explicitly postponed"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.94,
+          "verdict": {
+            "plannedAction": 0.9,
+            "blocker": 0.03,
+            "permission": 0.03,
+            "unfinished": 0.08,
+            "deferred": 0.94,
+            "explicitStop": 0.02
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Postponed action (0.94)",
+          "latencyMs": 439
+        },
+        {
+          "requestProbability": 0.94,
+          "verdict": {
+            "plannedAction": 0.91,
+            "blocker": 0.03,
+            "permission": 0.03,
+            "unfinished": 0.08,
+            "deferred": 0.94,
+            "explicitStop": 0.02
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Postponed action (0.94)",
+          "latencyMs": 461
+        },
+        {
+          "requestProbability": 0.95,
+          "verdict": {
+            "plannedAction": 0.91,
+            "blocker": 0.03,
+            "permission": 0.03,
+            "unfinished": 0.08,
+            "deferred": 0.93,
+            "explicitStop": 0.02
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Postponed action (0.93)",
+          "latencyMs": 557
+        },
+        {
+          "requestProbability": 0.95,
+          "verdict": {
+            "plannedAction": 0.91,
+            "blocker": 0.03,
+            "permission": 0.03,
+            "unfinished": 0.08,
+            "deferred": 0.94,
+            "explicitStop": 0.02
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Postponed action (0.94)",
+          "latencyMs": 478
+        },
+        {
+          "requestProbability": 0.94,
+          "verdict": {
+            "plannedAction": 0.92,
+            "blocker": 0.03,
+            "permission": 0.02,
+            "unfinished": 0.08,
+            "deferred": 0.94,
+            "explicitStop": 0.02
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Postponed action (0.94)",
+          "latencyMs": 444
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "user-next-action",
+        "request": "Configure the test machine. I will transfer the sources myself.",
+        "group": "quiet",
+        "reply": "Everything is configured. Next you need to transfer the sources to the test machine.",
+        "expect": "quiet",
+        "why": "the next action belongs to the user, not the assistant"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.95,
+          "verdict": {
+            "plannedAction": 0.31,
+            "blocker": 0.09,
+            "permission": 0.06,
+            "unfinished": 0.15,
+            "deferred": 0.06,
+            "explicitStop": 0.06
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 459
+        },
+        {
+          "requestProbability": 0.95,
+          "verdict": {
+            "plannedAction": 0.34,
+            "blocker": 0.09,
+            "permission": 0.05,
+            "unfinished": 0.15,
+            "deferred": 0.05,
+            "explicitStop": 0.07
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 468
+        },
+        {
+          "requestProbability": 0.95,
+          "verdict": {
+            "plannedAction": 0.33,
+            "blocker": 0.1,
+            "permission": 0.05,
+            "unfinished": 0.15,
+            "deferred": 0.05,
+            "explicitStop": 0.07
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 513
+        },
+        {
+          "requestProbability": 0.95,
+          "verdict": {
+            "plannedAction": 0.32,
+            "blocker": 0.08,
+            "permission": 0.06,
+            "unfinished": 0.16,
+            "deferred": 0.05,
+            "explicitStop": 0.08
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 404
+        },
+        {
+          "requestProbability": 0.95,
+          "verdict": {
+            "plannedAction": 0.3,
+            "blocker": 0.1,
+            "permission": 0.05,
+            "unfinished": 0.18,
+            "deferred": 0.05,
+            "explicitStop": 0.07
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 416
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "unfinished-but-refused",
+        "request": "Transfer the sources.",
+        "group": "quiet",
+        "reply": "Earlier I wrote 'Next — transfer the sources', but did not transfer anything. I will not continue now.",
+        "expect": "quiet",
+        "why": "an explicit refusal vetoes unfinished work"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.94,
+          "verdict": {
+            "plannedAction": 0.07,
+            "blocker": 0.16,
+            "permission": 0.06,
+            "unfinished": 0.86,
+            "deferred": 0.06,
+            "explicitStop": 0.95
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Explicit stop (0.95)",
+          "latencyMs": 473
+        },
+        {
+          "requestProbability": 0.94,
+          "verdict": {
+            "plannedAction": 0.07,
+            "blocker": 0.17,
+            "permission": 0.06,
+            "unfinished": 0.85,
+            "deferred": 0.05,
+            "explicitStop": 0.96
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Explicit stop (0.96)",
+          "latencyMs": 440
+        },
+        {
+          "requestProbability": 0.95,
+          "verdict": {
+            "plannedAction": 0.06,
+            "blocker": 0.15,
+            "permission": 0.06,
+            "unfinished": 0.86,
+            "deferred": 0.06,
+            "explicitStop": 0.96
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Explicit stop (0.96)",
+          "latencyMs": 465
+        },
+        {
+          "requestProbability": 0.94,
+          "verdict": {
+            "plannedAction": 0.07,
+            "blocker": 0.16,
+            "permission": 0.06,
+            "unfinished": 0.86,
+            "deferred": 0.06,
+            "explicitStop": 0.96
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Explicit stop (0.96)",
+          "latencyMs": 475
+        },
+        {
+          "requestProbability": 0.95,
+          "verdict": {
+            "plannedAction": 0.07,
+            "blocker": 0.16,
+            "permission": 0.06,
+            "unfinished": 0.87,
+            "deferred": 0.05,
+            "explicitStop": 0.95
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Explicit stop (0.95)",
+          "latencyMs": 473
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "optional-next-action",
+        "request": "Configure the test machine.",
+        "group": "quiet",
+        "reply": "Everything is configured. We could also transfer the sources if you want.",
+        "expect": "quiet",
+        "why": "an optional offer is not permission to proceed"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.96,
+          "verdict": {
+            "plannedAction": 0.1,
+            "blocker": 0.04,
+            "permission": 0.9,
+            "unfinished": 0.02,
+            "deferred": 0.63,
+            "explicitStop": 0.04
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Permission needed (0.90), Postponed action (0.63)",
+          "latencyMs": 439
+        },
+        {
+          "requestProbability": 0.96,
+          "verdict": {
+            "plannedAction": 0.09,
+            "blocker": 0.04,
+            "permission": 0.9,
+            "unfinished": 0.02,
+            "deferred": 0.6,
+            "explicitStop": 0.03
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Permission needed (0.90), Postponed action (0.60)",
+          "latencyMs": 424
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.09,
+            "blocker": 0.04,
+            "permission": 0.9,
+            "unfinished": 0.02,
+            "deferred": 0.56,
+            "explicitStop": 0.04
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Permission needed (0.90), Postponed action (0.56)",
+          "latencyMs": 489
+        },
+        {
+          "requestProbability": 0.96,
+          "verdict": {
+            "plannedAction": 0.09,
+            "blocker": 0.04,
+            "permission": 0.9,
+            "unfinished": 0.02,
+            "deferred": 0.58,
+            "explicitStop": 0.03
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Permission needed (0.90), Postponed action (0.58)",
+          "latencyMs": 436
+        },
+        {
+          "requestProbability": 0.96,
+          "verdict": {
+            "plannedAction": 0.09,
+            "blocker": 0.04,
+            "permission": 0.9,
+            "unfinished": 0.02,
+            "deferred": 0.62,
+            "explicitStop": 0.04
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Permission needed (0.90), Postponed action (0.62)",
+          "latencyMs": 432
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "unfinished-with-next-action",
+        "request": "Find and fix duplicate delivery and verify the result.",
+        "group": "promise",
+        "reply": "I found the cause, but have not fixed the duplicate yet. I will fix repeated delivery now and check the result.",
+        "expect": "continue",
+        "why": "unfinished work and an explicit next action"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.96,
+          "verdict": {
+            "plannedAction": 0.95,
+            "blocker": 0.06,
+            "permission": 0.04,
+            "unfinished": 0.91,
+            "deferred": 0.1,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.95), Unfinished work (0.91)",
+          "latencyMs": 426
+        },
+        {
+          "requestProbability": 0.96,
+          "verdict": {
+            "plannedAction": 0.95,
+            "blocker": 0.06,
+            "permission": 0.04,
+            "unfinished": 0.92,
+            "deferred": 0.1,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.95), Unfinished work (0.92)",
+          "latencyMs": 409
+        },
+        {
+          "requestProbability": 0.96,
+          "verdict": {
+            "plannedAction": 0.95,
+            "blocker": 0.06,
+            "permission": 0.04,
+            "unfinished": 0.91,
+            "deferred": 0.1,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.95), Unfinished work (0.91)",
+          "latencyMs": 560
+        },
+        {
+          "requestProbability": 0.96,
+          "verdict": {
+            "plannedAction": 0.95,
+            "blocker": 0.06,
+            "permission": 0.04,
+            "unfinished": 0.92,
+            "deferred": 0.1,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.95), Unfinished work (0.92)",
+          "latencyMs": 434
+        },
+        {
+          "requestProbability": 0.96,
+          "verdict": {
+            "plannedAction": 0.95,
+            "blocker": 0.06,
+            "permission": 0.03,
+            "unfinished": 0.92,
+            "deferred": 0.11,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.95), Unfinished work (0.92)",
+          "latencyMs": 443
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "retry-fixed-promises-resume-ru",
+        "request": "Исправь настройку повторов и продолжи запуск. Дополнительные проверки не включай.",
+        "group": "target",
+        "reply": "Исправил настройку повторов: запрос при временном сбое API повторяется до 3 раз, сама задача повторно не запускается. Дополнительные проверки остаются отключены. Продолжаю запуск.",
+        "expect": "continue",
+        "why": "a completed correction still ends with a commitment to continue now"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.78,
+            "blocker": 0.05,
+            "permission": 0.03,
+            "unfinished": 0.05,
+            "deferred": 0.08,
+            "explicitStop": 0.03
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.78)",
+          "latencyMs": 469
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.82,
+            "blocker": 0.05,
+            "permission": 0.03,
+            "unfinished": 0.04,
+            "deferred": 0.07,
+            "explicitStop": 0.03
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.82)",
+          "latencyMs": 483
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.78,
+            "blocker": 0.05,
+            "permission": 0.03,
+            "unfinished": 0.05,
+            "deferred": 0.07,
+            "explicitStop": 0.03
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.78)",
+          "latencyMs": 465
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.82,
+            "blocker": 0.05,
+            "permission": 0.03,
+            "unfinished": 0.05,
+            "deferred": 0.07,
+            "explicitStop": 0.03
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.82)",
+          "latencyMs": 450
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.79,
+            "blocker": 0.05,
+            "permission": 0.03,
+            "unfinished": 0.04,
+            "deferred": 0.07,
+            "explicitStop": 0.03
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.79)",
+          "latencyMs": 426
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "retry-fixed-promises-resume-en",
+        "request": "Fix the retry setting and continue the run. Keep additional checks disabled.",
+        "group": "target",
+        "reply": "Fixed the retry setting: a request after a temporary API failure is retried up to 3 times, but the task itself is not restarted. Additional checks remain disabled. Continuing the run.",
+        "expect": "continue",
+        "why": "the English version makes the same immediate commitment"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.56,
+            "blocker": 0.04,
+            "permission": 0.03,
+            "unfinished": 0.03,
+            "deferred": 0.06,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.56)",
+          "latencyMs": 469
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.53,
+            "blocker": 0.04,
+            "permission": 0.03,
+            "unfinished": 0.04,
+            "deferred": 0.06,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.53)",
+          "latencyMs": 448
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.54,
+            "blocker": 0.04,
+            "permission": 0.03,
+            "unfinished": 0.04,
+            "deferred": 0.06,
+            "explicitStop": 0.03
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.54)",
+          "latencyMs": 455
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.54,
+            "blocker": 0.04,
+            "permission": 0.03,
+            "unfinished": 0.04,
+            "deferred": 0.06,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.54)",
+          "latencyMs": 444
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.53,
+            "blocker": 0.04,
+            "permission": 0.03,
+            "unfinished": 0.04,
+            "deferred": 0.06,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.53)",
+          "latencyMs": 489
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "starting-now",
+        "request": "Write the script.",
+        "group": "promise",
+        "reply": "I will write the script now.",
+        "expect": "continue",
+        "why": "the assistant promises immediate work"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.9,
+            "blocker": 0.03,
+            "permission": 0.03,
+            "unfinished": 0.03,
+            "deferred": 0.04,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.90)",
+          "latencyMs": 444
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.92,
+            "blocker": 0.03,
+            "permission": 0.03,
+            "unfinished": 0.04,
+            "deferred": 0.05,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.92)",
+          "latencyMs": 479
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.9,
+            "blocker": 0.03,
+            "permission": 0.03,
+            "unfinished": 0.03,
+            "deferred": 0.05,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.90)",
+          "latencyMs": 433
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.92,
+            "blocker": 0.03,
+            "permission": 0.03,
+            "unfinished": 0.04,
+            "deferred": 0.05,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.92)",
+          "latencyMs": 476
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.91,
+            "blocker": 0.03,
+            "permission": 0.03,
+            "unfinished": 0.03,
+            "deferred": 0.05,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.91)",
+          "latencyMs": 459
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "next-check",
+        "request": "Apply the change and run the tests.",
+        "group": "promise",
+        "reply": "The change is in. Next I will run the tests.",
+        "expect": "continue",
+        "why": "verification is explicitly the next step"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.95,
+            "blocker": 0.04,
+            "permission": 0.03,
+            "unfinished": 0.55,
+            "deferred": 0.11,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.95), Unfinished work (0.55)",
+          "latencyMs": 433
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.95,
+            "blocker": 0.04,
+            "permission": 0.03,
+            "unfinished": 0.54,
+            "deferred": 0.1,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.95), Unfinished work (0.54)",
+          "latencyMs": 390
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.95,
+            "blocker": 0.04,
+            "permission": 0.03,
+            "unfinished": 0.48,
+            "deferred": 0.11,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.95)",
+          "latencyMs": 500
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.95,
+            "blocker": 0.04,
+            "permission": 0.03,
+            "unfinished": 0.5,
+            "deferred": 0.12,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.95), Unfinished work (0.50)",
+          "latencyMs": 421
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.95,
+            "blocker": 0.04,
+            "permission": 0.03,
+            "unfinished": 0.5,
+            "deferred": 0.11,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.95), Unfinished work (0.50)",
+          "latencyMs": 515
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "russian-next-check",
+        "request": "Внеси исправление и запусти тесты.",
+        "group": "promise",
+        "reply": "Исправил. Сейчас проверю тестами.",
+        "expect": "continue",
+        "why": "the same next-step promise in Russian"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.92,
+            "blocker": 0.05,
+            "permission": 0.03,
+            "unfinished": 0.22,
+            "deferred": 0.13,
+            "explicitStop": 0.03
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.92)",
+          "latencyMs": 467
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.93,
+            "blocker": 0.05,
+            "permission": 0.03,
+            "unfinished": 0.2,
+            "deferred": 0.14,
+            "explicitStop": 0.03
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.93)",
+          "latencyMs": 455
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.93,
+            "blocker": 0.05,
+            "permission": 0.03,
+            "unfinished": 0.2,
+            "deferred": 0.12,
+            "explicitStop": 0.03
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.93)",
+          "latencyMs": 537
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.92,
+            "blocker": 0.05,
+            "permission": 0.03,
+            "unfinished": 0.19,
+            "deferred": 0.13,
+            "explicitStop": 0.03
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.92)",
+          "latencyMs": 491
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.92,
+            "blocker": 0.05,
+            "permission": 0.03,
+            "unfinished": 0.21,
+            "deferred": 0.14,
+            "explicitStop": 0.03
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.92)",
+          "latencyMs": 556
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "confident-en",
+        "request": "Fix the problem and run the tests.",
+        "group": "quiet",
+        "reply": "I am confident this fixes the problem. The tests pass.",
+        "expect": "quiet",
+        "why": "confidence is not a promise"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.04,
+            "blocker": 0.03,
+            "permission": 0.03,
+            "unfinished": 0.03,
+            "deferred": 0.03,
+            "explicitStop": 0.03
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 433
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.04,
+            "blocker": 0.03,
+            "permission": 0.03,
+            "unfinished": 0.03,
+            "deferred": 0.04,
+            "explicitStop": 0.03
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 498
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.04,
+            "blocker": 0.03,
+            "permission": 0.03,
+            "unfinished": 0.03,
+            "deferred": 0.04,
+            "explicitStop": 0.03
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 503
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.04,
+            "blocker": 0.03,
+            "permission": 0.03,
+            "unfinished": 0.03,
+            "deferred": 0.03,
+            "explicitStop": 0.03
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 404
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.04,
+            "blocker": 0.03,
+            "permission": 0.03,
+            "unfinished": 0.03,
+            "deferred": 0.03,
+            "explicitStop": 0.03
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 540
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "confident-ru",
+        "request": "Исправь проблему и запусти тесты.",
+        "group": "quiet",
+        "reply": "Уверен, что это исправляет проблему. Тесты прошли.",
+        "expect": "quiet",
+        "why": "Russian confidence is not a promise"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.06,
+            "blocker": 0.04,
+            "permission": 0.04,
+            "unfinished": 0.03,
+            "deferred": 0.04,
+            "explicitStop": 0.04
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 438
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.06,
+            "blocker": 0.04,
+            "permission": 0.03,
+            "unfinished": 0.03,
+            "deferred": 0.04,
+            "explicitStop": 0.03
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 525
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.06,
+            "blocker": 0.04,
+            "permission": 0.03,
+            "unfinished": 0.03,
+            "deferred": 0.04,
+            "explicitStop": 0.03
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 490
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.06,
+            "blocker": 0.04,
+            "permission": 0.03,
+            "unfinished": 0.03,
+            "deferred": 0.04,
+            "explicitStop": 0.04
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 425
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.05,
+            "blocker": 0.04,
+            "permission": 0.03,
+            "unfinished": 0.03,
+            "deferred": 0.04,
+            "explicitStop": 0.03
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 477
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "unfinished-no-promise",
+        "request": "Update a.ts, b.ts, and c.ts.",
+        "group": "promise",
+        "reply": "Only a.ts and b.ts are updated. c.ts is unchanged.",
+        "expect": "continue",
+        "why": "explicit unfinished work is now a continuation signal"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.96,
+          "verdict": {
+            "plannedAction": 0.04,
+            "blocker": 0.09,
+            "permission": 0.04,
+            "unfinished": 0.95,
+            "deferred": 0.03,
+            "explicitStop": 0.07
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.95)",
+          "latencyMs": 431
+        },
+        {
+          "requestProbability": 0.96,
+          "verdict": {
+            "plannedAction": 0.05,
+            "blocker": 0.08,
+            "permission": 0.04,
+            "unfinished": 0.95,
+            "deferred": 0.03,
+            "explicitStop": 0.07
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.95)",
+          "latencyMs": 447
+        },
+        {
+          "requestProbability": 0.96,
+          "verdict": {
+            "plannedAction": 0.04,
+            "blocker": 0.09,
+            "permission": 0.04,
+            "unfinished": 0.94,
+            "deferred": 0.03,
+            "explicitStop": 0.07
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.94)",
+          "latencyMs": 450
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.04,
+            "blocker": 0.09,
+            "permission": 0.04,
+            "unfinished": 0.94,
+            "deferred": 0.03,
+            "explicitStop": 0.08
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.94)",
+          "latencyMs": 553
+        },
+        {
+          "requestProbability": 0.96,
+          "verdict": {
+            "plannedAction": 0.05,
+            "blocker": 0.09,
+            "permission": 0.04,
+            "unfinished": 0.95,
+            "deferred": 0.03,
+            "explicitStop": 0.07
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.95)",
+          "latencyMs": 559
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "later",
+        "request": "Run the tests next week.",
+        "group": "quiet",
+        "reply": "I will run the tests next week.",
+        "expect": "quiet",
+        "why": "a later promise is not immediate"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.93,
+          "verdict": {
+            "plannedAction": 0.9,
+            "blocker": 0.03,
+            "permission": 0.03,
+            "unfinished": 0.06,
+            "deferred": 0.94,
+            "explicitStop": 0.02
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Postponed action (0.94)",
+          "latencyMs": 481
+        },
+        {
+          "requestProbability": 0.93,
+          "verdict": {
+            "plannedAction": 0.91,
+            "blocker": 0.03,
+            "permission": 0.03,
+            "unfinished": 0.06,
+            "deferred": 0.94,
+            "explicitStop": 0.02
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Postponed action (0.94)",
+          "latencyMs": 3022
+        },
+        {
+          "requestProbability": 0.92,
+          "verdict": {
+            "plannedAction": 0.91,
+            "blocker": 0.03,
+            "permission": 0.03,
+            "unfinished": 0.07,
+            "deferred": 0.93,
+            "explicitStop": 0.02
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Postponed action (0.93)",
+          "latencyMs": 505
+        },
+        {
+          "requestProbability": 0.92,
+          "verdict": {
+            "plannedAction": 0.92,
+            "blocker": 0.03,
+            "permission": 0.02,
+            "unfinished": 0.06,
+            "deferred": 0.94,
+            "explicitStop": 0.02
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Postponed action (0.94)",
+          "latencyMs": 591
+        },
+        {
+          "requestProbability": 0.93,
+          "verdict": {
+            "plannedAction": 0.92,
+            "blocker": 0.03,
+            "permission": 0.03,
+            "unfinished": 0.07,
+            "deferred": 0.95,
+            "explicitStop": 0.02
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Postponed action (0.95)",
+          "latencyMs": 515
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "status-while-coding",
+        "request": "Fix the current failures, then run the tests for the earlier implementation.",
+        "group": "quiet",
+        "reply": "I chose linewise insertion. The earlier implementation still needs tests; I will run them after fixing the current failures.",
+        "expect": "quiet",
+        "why": "future work depends on a later event"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.9,
+            "blocker": 0.13,
+            "permission": 0.04,
+            "unfinished": 0.59,
+            "deferred": 0.95,
+            "explicitStop": 0.03
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Postponed action (0.95)",
+          "latencyMs": 575
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.9,
+            "blocker": 0.11,
+            "permission": 0.04,
+            "unfinished": 0.62,
+            "deferred": 0.95,
+            "explicitStop": 0.03
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Postponed action (0.95)",
+          "latencyMs": 2986
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.89,
+            "blocker": 0.12,
+            "permission": 0.04,
+            "unfinished": 0.63,
+            "deferred": 0.95,
+            "explicitStop": 0.04
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Postponed action (0.95)",
+          "latencyMs": 518
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.9,
+            "blocker": 0.11,
+            "permission": 0.04,
+            "unfinished": 0.62,
+            "deferred": 0.95,
+            "explicitStop": 0.03
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Postponed action (0.95)",
+          "latencyMs": 519
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.9,
+            "blocker": 0.12,
+            "permission": 0.04,
+            "unfinished": 0.61,
+            "deferred": 0.96,
+            "explicitStop": 0.03
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Postponed action (0.96)",
+          "latencyMs": 473
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "waiting-build",
+        "request": "Run the build and wait for its result.",
+        "group": "quiet",
+        "reply": "The build is already running. Its completion will automatically resume this session.",
+        "expect": "quiet",
+        "why": "no new assistant action is promised"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.21,
+            "blocker": 0.44,
+            "permission": 0.04,
+            "unfinished": 0.44,
+            "deferred": 0.85,
+            "explicitStop": 0.07
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Postponed action (0.85)",
+          "latencyMs": 512
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.2,
+            "blocker": 0.45,
+            "permission": 0.04,
+            "unfinished": 0.41,
+            "deferred": 0.83,
+            "explicitStop": 0.07
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Postponed action (0.83)",
+          "latencyMs": 3080
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.19,
+            "blocker": 0.45,
+            "permission": 0.04,
+            "unfinished": 0.38,
+            "deferred": 0.82,
+            "explicitStop": 0.07
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Postponed action (0.82)",
+          "latencyMs": 470
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.19,
+            "blocker": 0.44,
+            "permission": 0.04,
+            "unfinished": 0.39,
+            "deferred": 0.84,
+            "explicitStop": 0.07
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Postponed action (0.84)",
+          "latencyMs": 623
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.19,
+            "blocker": 0.44,
+            "permission": 0.04,
+            "unfinished": 0.4,
+            "deferred": 0.82,
+            "explicitStop": 0.07
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Postponed action (0.82)",
+          "latencyMs": 500
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "reload-continue",
+        "request": "Reload Pi and verify the change live.",
+        "group": "quiet",
+        "reply": "Reloading now; after the reload the session continues automatically with the live check.",
+        "expect": "quiet",
+        "why": "automatic continuation is not a new action promise"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.82,
+            "blocker": 0.04,
+            "permission": 0.03,
+            "unfinished": 0.05,
+            "deferred": 0.65,
+            "explicitStop": 0.02
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Postponed action (0.65)",
+          "latencyMs": 3088
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.83,
+            "blocker": 0.04,
+            "permission": 0.04,
+            "unfinished": 0.05,
+            "deferred": 0.71,
+            "explicitStop": 0.02
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Postponed action (0.71)",
+          "latencyMs": 527
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.82,
+            "blocker": 0.04,
+            "permission": 0.03,
+            "unfinished": 0.05,
+            "deferred": 0.61,
+            "explicitStop": 0.02
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Postponed action (0.61)",
+          "latencyMs": 547
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.81,
+            "blocker": 0.04,
+            "permission": 0.03,
+            "unfinished": 0.05,
+            "deferred": 0.68,
+            "explicitStop": 0.02
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Postponed action (0.68)",
+          "latencyMs": 700
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.82,
+            "blocker": 0.04,
+            "permission": 0.03,
+            "unfinished": 0.05,
+            "deferred": 0.62,
+            "explicitStop": 0.02
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Postponed action (0.62)",
+          "latencyMs": 493
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "optional-extra",
+        "request": "Fix the reported issue.",
+        "group": "quiet",
+        "reply": "Fixed. We could sweep the other documents later if you want.",
+        "expect": "quiet",
+        "why": "a conditional suggestion is not a commitment"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.1,
+            "blocker": 0.04,
+            "permission": 0.92,
+            "unfinished": 0.05,
+            "deferred": 0.76,
+            "explicitStop": 0.06
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Permission needed (0.92), Postponed action (0.76)",
+          "latencyMs": 500
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.1,
+            "blocker": 0.04,
+            "permission": 0.92,
+            "unfinished": 0.04,
+            "deferred": 0.76,
+            "explicitStop": 0.05
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Permission needed (0.92), Postponed action (0.76)",
+          "latencyMs": 518
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.1,
+            "blocker": 0.04,
+            "permission": 0.92,
+            "unfinished": 0.04,
+            "deferred": 0.77,
+            "explicitStop": 0.06
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Permission needed (0.92), Postponed action (0.77)",
+          "latencyMs": 492
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.1,
+            "blocker": 0.05,
+            "permission": 0.92,
+            "unfinished": 0.04,
+            "deferred": 0.76,
+            "explicitStop": 0.06
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Permission needed (0.92), Postponed action (0.76)",
+          "latencyMs": 486
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.1,
+            "blocker": 0.04,
+            "permission": 0.92,
+            "unfinished": 0.04,
+            "deferred": 0.78,
+            "explicitStop": 0.06
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Permission needed (0.92), Postponed action (0.78)",
+          "latencyMs": 503
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "quoted-promise",
+        "request": "Continue the existing run.",
+        "group": "promise",
+        "reply": "The earlier reply said 'Continuing the run', but it did not start anything.",
+        "expect": "continue",
+        "why": "reporting an unperformed action is explicit unfinished work"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.06,
+            "blocker": 0.43,
+            "permission": 0.06,
+            "unfinished": 0.77,
+            "deferred": 0.05,
+            "explicitStop": 0.06
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.77)",
+          "latencyMs": 555
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.06,
+            "blocker": 0.44,
+            "permission": 0.06,
+            "unfinished": 0.76,
+            "deferred": 0.04,
+            "explicitStop": 0.06
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.76)",
+          "latencyMs": 546
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.06,
+            "blocker": 0.47,
+            "permission": 0.06,
+            "unfinished": 0.75,
+            "deferred": 0.05,
+            "explicitStop": 0.06
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.75)",
+          "latencyMs": 462
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.06,
+            "blocker": 0.45,
+            "permission": 0.06,
+            "unfinished": 0.76,
+            "deferred": 0.04,
+            "explicitStop": 0.06
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.76)",
+          "latencyMs": 508
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.06,
+            "blocker": 0.42,
+            "permission": 0.06,
+            "unfinished": 0.78,
+            "deferred": 0.04,
+            "explicitStop": 0.06
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.78)",
+          "latencyMs": 485
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "negated-promise",
+        "request": "Stop the run.",
+        "group": "quiet",
+        "reply": "I will not continue the run. You asked me to stop.",
+        "expect": "quiet",
+        "why": "a refusal to act is not a promise to act"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.92,
+          "verdict": {
+            "plannedAction": 0.06,
+            "blocker": 0.05,
+            "permission": 0.04,
+            "unfinished": 0.03,
+            "deferred": 0.04,
+            "explicitStop": 0.98
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Explicit stop (0.98)",
+          "latencyMs": 492
+        },
+        {
+          "requestProbability": 0.93,
+          "verdict": {
+            "plannedAction": 0.07,
+            "blocker": 0.05,
+            "permission": 0.05,
+            "unfinished": 0.03,
+            "deferred": 0.04,
+            "explicitStop": 0.98
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Explicit stop (0.98)",
+          "latencyMs": 537
+        },
+        {
+          "requestProbability": 0.93,
+          "verdict": {
+            "plannedAction": 0.08,
+            "blocker": 0.05,
+            "permission": 0.04,
+            "unfinished": 0.03,
+            "deferred": 0.04,
+            "explicitStop": 0.98
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Explicit stop (0.98)",
+          "latencyMs": 617
+        },
+        {
+          "requestProbability": 0.91,
+          "verdict": {
+            "plannedAction": 0.07,
+            "blocker": 0.05,
+            "permission": 0.04,
+            "unfinished": 0.03,
+            "deferred": 0.04,
+            "explicitStop": 0.98
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Explicit stop (0.98)",
+          "latencyMs": 486
+        },
+        {
+          "requestProbability": 0.93,
+          "verdict": {
+            "plannedAction": 0.07,
+            "blocker": 0.05,
+            "permission": 0.04,
+            "unfinished": 0.03,
+            "deferred": 0.04,
+            "explicitStop": 0.98
+          },
+          "outcome": "quiet",
+          "reason": "blocked by Explicit stop (0.98)",
+          "latencyMs": 493
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "pure-question-answered",
+        "request": "What does TOCTOU mean?",
+        "group": "quiet",
+        "reply": "TOCTOU means time-of-check to time-of-use.",
+        "expect": "quiet",
+        "why": "an explanation has no next-action promise"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.03,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 219
+        },
+        {
+          "requestProbability": 0.03,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 238
+        },
+        {
+          "requestProbability": 0.03,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 250
+        },
+        {
+          "requestProbability": 0.03,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 255
+        },
+        {
+          "requestProbability": 0.03,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 206
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "status-request-en",
+        "group": "target",
+        "request": "What is left?",
+        "reply": "The bug is not fixed. I will fix it now.",
+        "expect": "quiet",
+        "why": "a status question does not authorize unfinished work"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.06,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 259
+        },
+        {
+          "requestProbability": 0.05,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 216
+        },
+        {
+          "requestProbability": 0.06,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 232
+        },
+        {
+          "requestProbability": 0.06,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 261
+        },
+        {
+          "requestProbability": 0.06,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 255
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "status-request-ru",
+        "group": "target",
+        "request": "Что осталось?",
+        "reply": "Осталась LPT-392. Сейчас начну работу над ней.",
+        "expect": "quiet",
+        "why": "a Russian status question does not authorize the remaining task"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.06,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 288
+        },
+        {
+          "requestProbability": 0.06,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 271
+        },
+        {
+          "requestProbability": 0.06,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 241
+        },
+        {
+          "requestProbability": 0.06,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 293
+        },
+        {
+          "requestProbability": 0.06,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 224
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "question-request-en",
+        "group": "target",
+        "request": "Can you fix the bug?",
+        "reply": "The bug is not fixed. I will fix it now.",
+        "expect": "quiet",
+        "why": "a question-shaped request is not a direct command"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.16,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 302
+        },
+        {
+          "requestProbability": 0.14,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 268
+        },
+        {
+          "requestProbability": 0.16,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 233
+        },
+        {
+          "requestProbability": 0.14,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 250
+        },
+        {
+          "requestProbability": 0.14,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 307
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "question-request-ru",
+        "group": "target",
+        "request": "Можешь исправить баг?",
+        "reply": "Осталась LPT-392. Сейчас начну работу над ней.",
+        "expect": "quiet",
+        "why": "a Russian question-shaped request is not a direct command"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.13,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 243
+        },
+        {
+          "requestProbability": 0.12,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 219
+        },
+        {
+          "requestProbability": 0.13,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 268
+        },
+        {
+          "requestProbability": 0.13,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 237
+        },
+        {
+          "requestProbability": 0.12,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 239
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "command-request-en",
+        "group": "target",
+        "request": "Fix the bug.",
+        "reply": "The bug is not fixed. I will fix it now.",
+        "expect": "continue",
+        "why": "the same reply can continue after a direct command"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.93,
+            "blocker": 0.06,
+            "permission": 0.03,
+            "unfinished": 0.91,
+            "deferred": 0.06,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.93), Unfinished work (0.91)",
+          "latencyMs": 505
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.93,
+            "blocker": 0.06,
+            "permission": 0.03,
+            "unfinished": 0.9,
+            "deferred": 0.06,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.93), Unfinished work (0.90)",
+          "latencyMs": 500
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.93,
+            "blocker": 0.06,
+            "permission": 0.03,
+            "unfinished": 0.91,
+            "deferred": 0.06,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.93), Unfinished work (0.91)",
+          "latencyMs": 482
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.93,
+            "blocker": 0.06,
+            "permission": 0.03,
+            "unfinished": 0.91,
+            "deferred": 0.06,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.93), Unfinished work (0.91)",
+          "latencyMs": 476
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.93,
+            "blocker": 0.06,
+            "permission": 0.03,
+            "unfinished": 0.92,
+            "deferred": 0.06,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.93), Unfinished work (0.92)",
+          "latencyMs": 502
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "command-request-ru",
+        "group": "target",
+        "request": "Сделай LPT-392.",
+        "reply": "Осталась LPT-392. Сейчас начну работу над ней.",
+        "expect": "continue",
+        "why": "the same Russian reply can continue after a direct command"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.96,
+          "verdict": {
+            "plannedAction": 0.87,
+            "blocker": 0.05,
+            "permission": 0.03,
+            "unfinished": 0.87,
+            "deferred": 0.1,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.87), Unfinished work (0.87)",
+          "latencyMs": 471
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.88,
+            "blocker": 0.06,
+            "permission": 0.03,
+            "unfinished": 0.87,
+            "deferred": 0.1,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.88), Unfinished work (0.87)",
+          "latencyMs": 481
+        },
+        {
+          "requestProbability": 0.96,
+          "verdict": {
+            "plannedAction": 0.89,
+            "blocker": 0.05,
+            "permission": 0.03,
+            "unfinished": 0.86,
+            "deferred": 0.1,
+            "explicitStop": 0.03
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.89), Unfinished work (0.86)",
+          "latencyMs": 450
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.89,
+            "blocker": 0.05,
+            "permission": 0.03,
+            "unfinished": 0.84,
+            "deferred": 0.1,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.89), Unfinished work (0.84)",
+          "latencyMs": 434
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.88,
+            "blocker": 0.06,
+            "permission": 0.03,
+            "unfinished": 0.87,
+            "deferred": 0.1,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.88), Unfinished work (0.87)",
+          "latencyMs": 598
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "mixed-request-en",
+        "group": "target",
+        "request": "Why does it fail? Find the cause and fix it.",
+        "reply": "The bug is not fixed. I will fix it now.",
+        "expect": "continue",
+        "why": "a question does not cancel a separate work command"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.9,
+          "verdict": {
+            "plannedAction": 0.87,
+            "blocker": 0.09,
+            "permission": 0.03,
+            "unfinished": 0.78,
+            "deferred": 0.06,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.87), Unfinished work (0.78)",
+          "latencyMs": 529
+        },
+        {
+          "requestProbability": 0.89,
+          "verdict": {
+            "plannedAction": 0.86,
+            "blocker": 0.08,
+            "permission": 0.03,
+            "unfinished": 0.75,
+            "deferred": 0.06,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.86), Unfinished work (0.75)",
+          "latencyMs": 449
+        },
+        {
+          "requestProbability": 0.9,
+          "verdict": {
+            "plannedAction": 0.86,
+            "blocker": 0.08,
+            "permission": 0.03,
+            "unfinished": 0.76,
+            "deferred": 0.05,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.86), Unfinished work (0.76)",
+          "latencyMs": 459
+        },
+        {
+          "requestProbability": 0.89,
+          "verdict": {
+            "plannedAction": 0.88,
+            "blocker": 0.08,
+            "permission": 0.03,
+            "unfinished": 0.74,
+            "deferred": 0.06,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.88), Unfinished work (0.74)",
+          "latencyMs": 467
+        },
+        {
+          "requestProbability": 0.89,
+          "verdict": {
+            "plannedAction": 0.86,
+            "blocker": 0.08,
+            "permission": 0.03,
+            "unfinished": 0.76,
+            "deferred": 0.06,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.86), Unfinished work (0.76)",
+          "latencyMs": 467
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "mixed-request-ru",
+        "group": "target",
+        "request": "Почему падает? Найди причину и исправь.",
+        "reply": "Причину нашёл, исправление не внесено. Сейчас исправлю.",
+        "expect": "continue",
+        "why": "a Russian mixed request includes a direct work command"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.93,
+          "verdict": {
+            "plannedAction": 0.91,
+            "blocker": 0.08,
+            "permission": 0.04,
+            "unfinished": 0.91,
+            "deferred": 0.16,
+            "explicitStop": 0.03
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.91), Unfinished work (0.91)",
+          "latencyMs": 512
+        },
+        {
+          "requestProbability": 0.92,
+          "verdict": {
+            "plannedAction": 0.91,
+            "blocker": 0.08,
+            "permission": 0.03,
+            "unfinished": 0.91,
+            "deferred": 0.13,
+            "explicitStop": 0.03
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.91), Unfinished work (0.91)",
+          "latencyMs": 468
+        },
+        {
+          "requestProbability": 0.93,
+          "verdict": {
+            "plannedAction": 0.91,
+            "blocker": 0.07,
+            "permission": 0.04,
+            "unfinished": 0.91,
+            "deferred": 0.15,
+            "explicitStop": 0.03
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.91), Unfinished work (0.91)",
+          "latencyMs": 479
+        },
+        {
+          "requestProbability": 0.92,
+          "verdict": {
+            "plannedAction": 0.91,
+            "blocker": 0.08,
+            "permission": 0.04,
+            "unfinished": 0.9,
+            "deferred": 0.14,
+            "explicitStop": 0.03
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.91), Unfinished work (0.90)",
+          "latencyMs": 462
+        },
+        {
+          "requestProbability": 0.92,
+          "verdict": {
+            "plannedAction": 0.91,
+            "blocker": 0.07,
+            "permission": 0.04,
+            "unfinished": 0.91,
+            "deferred": 0.16,
+            "explicitStop": 0.03
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.91), Unfinished work (0.91)",
+          "latencyMs": 640
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "plan-request",
+        "group": "target",
+        "request": "Write a plan for fixing the bug. Do not implement it.",
+        "reply": "The bug is not fixed. I will fix it now.",
+        "expect": "quiet",
+        "why": "a plan-only request does not authorize implementation"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.31,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 279
+        },
+        {
+          "requestProbability": 0.25,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 231
+        },
+        {
+          "requestProbability": 0.24,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 240
+        },
+        {
+          "requestProbability": 0.25,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 327
+        },
+        {
+          "requestProbability": 0.27,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 309
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "explanation-request",
+        "group": "target",
+        "request": "Explain why the bug occurs.",
+        "reply": "The bug is not fixed. I will fix it now.",
+        "expect": "quiet",
+        "why": "an explanation does not authorize the described fix"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.14,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 299
+        },
+        {
+          "requestProbability": 0.15,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 206
+        },
+        {
+          "requestProbability": 0.14,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 279
+        },
+        {
+          "requestProbability": 0.15,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 235
+        },
+        {
+          "requestProbability": 0.14,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 272
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "short-command-ru",
+        "group": "target",
+        "request": "делай",
+        "reply": "Осталась LPT-392. Сейчас начну работу над ней.",
+        "expect": "continue",
+        "why": "a short direct command still authorizes work"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.79,
+            "blocker": 0.08,
+            "permission": 0.03,
+            "unfinished": 0.24,
+            "deferred": 0.09,
+            "explicitStop": 0.03
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.79)",
+          "latencyMs": 697
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.77,
+            "blocker": 0.07,
+            "permission": 0.04,
+            "unfinished": 0.23,
+            "deferred": 0.09,
+            "explicitStop": 0.03
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.77)",
+          "latencyMs": 470
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.76,
+            "blocker": 0.08,
+            "permission": 0.03,
+            "unfinished": 0.24,
+            "deferred": 0.09,
+            "explicitStop": 0.03
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.76)",
+          "latencyMs": 445
+        },
+        {
+          "requestProbability": 0.96,
+          "verdict": {
+            "plannedAction": 0.77,
+            "blocker": 0.08,
+            "permission": 0.03,
+            "unfinished": 0.25,
+            "deferred": 0.1,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.77)",
+          "latencyMs": 511
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.79,
+            "blocker": 0.08,
+            "permission": 0.03,
+            "unfinished": 0.25,
+            "deferred": 0.08,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.79)",
+          "latencyMs": 500
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "quoted-command",
+        "group": "target",
+        "request": "What does the message \"Fix the bug now\" mean?",
+        "reply": "The bug is not fixed. I will fix it now.",
+        "expect": "quiet",
+        "why": "a quoted command is not a user instruction"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.15,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 252
+        },
+        {
+          "requestProbability": 0.13,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 227
+        },
+        {
+          "requestProbability": 0.14,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 200
+        },
+        {
+          "requestProbability": 0.17,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 250
+        },
+        {
+          "requestProbability": 0.15,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 254
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "unclear-request",
+        "group": "target",
+        "request": "Maybe we could fix the bug sometime.",
+        "reply": "The bug is not fixed. I will fix it now.",
+        "expect": "quiet",
+        "why": "a suggestion is not a direct work command"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.07,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 189
+        },
+        {
+          "requestProbability": 0.07,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 272
+        },
+        {
+          "requestProbability": 0.07,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 272
+        },
+        {
+          "requestProbability": 0.07,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 254
+        },
+        {
+          "requestProbability": 0.07,
+          "outcome": "quiet",
+          "reason": "no confident explicit work command",
+          "latencyMs": 273
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "scope-tests-report",
+        "group": "scope",
+        "request": "Run the tests and report the failures.",
+        "reply": "Ran the tests. Two tests failed. No fixes have been applied.",
+        "activity": "[tool] bash {\"command\":\"npm test\"}\n[tool ok] bash: tests completed, two failures",
+        "expect": "quiet",
+        "why": "the requested test run and report are complete; fixes were not requested"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.04,
+            "blocker": 0.08,
+            "permission": 0.04,
+            "unfinished": 0.2,
+            "deferred": 0.03,
+            "explicitStop": 0.06
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 419
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.04,
+            "blocker": 0.08,
+            "permission": 0.04,
+            "unfinished": 0.15,
+            "deferred": 0.04,
+            "explicitStop": 0.07
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 536
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.04,
+            "blocker": 0.07,
+            "permission": 0.04,
+            "unfinished": 0.2,
+            "deferred": 0.03,
+            "explicitStop": 0.06
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 542
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.04,
+            "blocker": 0.08,
+            "permission": 0.04,
+            "unfinished": 0.17,
+            "deferred": 0.03,
+            "explicitStop": 0.06
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 625
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.04,
+            "blocker": 0.08,
+            "permission": 0.04,
+            "unfinished": 0.17,
+            "deferred": 0.03,
+            "explicitStop": 0.07
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 517
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "scope-tests-fix",
+        "group": "scope",
+        "request": "Run the tests and fix the failures.",
+        "reply": "Ran the tests. Two tests failed. No fixes have been applied.",
+        "activity": "[tool] bash {\"command\":\"npm test\"}\n[tool ok] bash: tests completed, two failures",
+        "expect": "continue",
+        "why": "the same test report leaves a requested fix incomplete"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.04,
+            "blocker": 0.09,
+            "permission": 0.04,
+            "unfinished": 0.94,
+            "deferred": 0.03,
+            "explicitStop": 0.05
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.94)",
+          "latencyMs": 490
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.05,
+            "blocker": 0.09,
+            "permission": 0.04,
+            "unfinished": 0.93,
+            "deferred": 0.03,
+            "explicitStop": 0.05
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.93)",
+          "latencyMs": 508
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.05,
+            "blocker": 0.09,
+            "permission": 0.03,
+            "unfinished": 0.94,
+            "deferred": 0.03,
+            "explicitStop": 0.05
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.94)",
+          "latencyMs": 463
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.05,
+            "blocker": 0.09,
+            "permission": 0.04,
+            "unfinished": 0.94,
+            "deferred": 0.03,
+            "explicitStop": 0.05
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.94)",
+          "latencyMs": 503
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.04,
+            "blocker": 0.09,
+            "permission": 0.04,
+            "unfinished": 0.94,
+            "deferred": 0.03,
+            "explicitStop": 0.05
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.94)",
+          "latencyMs": 431
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "scope-cause-report",
+        "group": "scope",
+        "request": "Find the cause of duplicate delivery and report it.",
+        "reply": "The duplicate is caused by a second delivery call. The fix has not been applied.",
+        "activity": "[tool] read {\"path\":\"delivery.ts\"}\n[tool ok] read: two delivery calls",
+        "expect": "quiet",
+        "why": "finding and reporting the cause does not require applying a fix"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.94,
+          "verdict": {
+            "plannedAction": 0.06,
+            "blocker": 0.08,
+            "permission": 0.04,
+            "unfinished": 0.42,
+            "deferred": 0.04,
+            "explicitStop": 0.05
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 418
+        },
+        {
+          "requestProbability": 0.94,
+          "verdict": {
+            "plannedAction": 0.06,
+            "blocker": 0.09,
+            "permission": 0.04,
+            "unfinished": 0.4,
+            "deferred": 0.05,
+            "explicitStop": 0.05
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 439
+        },
+        {
+          "requestProbability": 0.94,
+          "verdict": {
+            "plannedAction": 0.05,
+            "blocker": 0.09,
+            "permission": 0.04,
+            "unfinished": 0.37,
+            "deferred": 0.04,
+            "explicitStop": 0.05
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 560
+        },
+        {
+          "requestProbability": 0.94,
+          "verdict": {
+            "plannedAction": 0.06,
+            "blocker": 0.09,
+            "permission": 0.04,
+            "unfinished": 0.4,
+            "deferred": 0.04,
+            "explicitStop": 0.05
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 453
+        },
+        {
+          "requestProbability": 0.94,
+          "verdict": {
+            "plannedAction": 0.06,
+            "blocker": 0.09,
+            "permission": 0.04,
+            "unfinished": 0.43,
+            "deferred": 0.04,
+            "explicitStop": 0.05
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 469
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "scope-cause-fix",
+        "group": "scope",
+        "request": "Find the cause of duplicate delivery and fix it.",
+        "reply": "The duplicate is caused by a second delivery call. The fix has not been applied.",
+        "activity": "[tool] read {\"path\":\"delivery.ts\"}\n[tool ok] read: two delivery calls",
+        "expect": "continue",
+        "why": "the same cause report leaves the requested fix incomplete"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.96,
+          "verdict": {
+            "plannedAction": 0.08,
+            "blocker": 0.09,
+            "permission": 0.05,
+            "unfinished": 0.95,
+            "deferred": 0.04,
+            "explicitStop": 0.06
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.95)",
+          "latencyMs": 478
+        },
+        {
+          "requestProbability": 0.95,
+          "verdict": {
+            "plannedAction": 0.09,
+            "blocker": 0.09,
+            "permission": 0.05,
+            "unfinished": 0.95,
+            "deferred": 0.04,
+            "explicitStop": 0.06
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.95)",
+          "latencyMs": 495
+        },
+        {
+          "requestProbability": 0.95,
+          "verdict": {
+            "plannedAction": 0.07,
+            "blocker": 0.09,
+            "permission": 0.05,
+            "unfinished": 0.95,
+            "deferred": 0.04,
+            "explicitStop": 0.05
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.95)",
+          "latencyMs": 439
+        },
+        {
+          "requestProbability": 0.96,
+          "verdict": {
+            "plannedAction": 0.08,
+            "blocker": 0.09,
+            "permission": 0.05,
+            "unfinished": 0.95,
+            "deferred": 0.04,
+            "explicitStop": 0.05
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.95)",
+          "latencyMs": 524
+        },
+        {
+          "requestProbability": 0.95,
+          "verdict": {
+            "plannedAction": 0.09,
+            "blocker": 0.09,
+            "permission": 0.05,
+            "unfinished": 0.95,
+            "deferred": 0.04,
+            "explicitStop": 0.06
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.95)",
+          "latencyMs": 633
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "scope-unrequested-next-action",
+        "group": "scope",
+        "request": "Check whether the configuration is valid and report the result.",
+        "reply": "The configuration is valid. Next — install the dependencies.",
+        "activity": "[tool] read {\"path\":\"config.json\"}\n[tool ok] read: valid configuration",
+        "expect": "quiet",
+        "why": "the assistant cannot add an installation to a completed check"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.94,
+          "verdict": {
+            "plannedAction": 0.28,
+            "blocker": 0.04,
+            "permission": 0.05,
+            "unfinished": 0.04,
+            "deferred": 0.07,
+            "explicitStop": 0.02
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 507
+        },
+        {
+          "requestProbability": 0.94,
+          "verdict": {
+            "plannedAction": 0.29,
+            "blocker": 0.04,
+            "permission": 0.05,
+            "unfinished": 0.05,
+            "deferred": 0.07,
+            "explicitStop": 0.02
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 458
+        },
+        {
+          "requestProbability": 0.94,
+          "verdict": {
+            "plannedAction": 0.32,
+            "blocker": 0.04,
+            "permission": 0.05,
+            "unfinished": 0.04,
+            "deferred": 0.06,
+            "explicitStop": 0.02
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 638
+        },
+        {
+          "requestProbability": 0.94,
+          "verdict": {
+            "plannedAction": 0.27,
+            "blocker": 0.04,
+            "permission": 0.05,
+            "unfinished": 0.04,
+            "deferred": 0.07,
+            "explicitStop": 0.02
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 513
+        },
+        {
+          "requestProbability": 0.94,
+          "verdict": {
+            "plannedAction": 0.28,
+            "blocker": 0.04,
+            "permission": 0.05,
+            "unfinished": 0.05,
+            "deferred": 0.07,
+            "explicitStop": 0.02
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 782
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "scope-requested-next-action",
+        "group": "scope",
+        "request": "Check whether the configuration is valid, then install the dependencies.",
+        "reply": "The configuration is valid. Next — install the dependencies.",
+        "activity": "[tool] read {\"path\":\"config.json\"}\n[tool ok] read: valid configuration",
+        "expect": "continue",
+        "why": "the same announcement is a still-unfinished part of the request"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.96,
+          "verdict": {
+            "plannedAction": 0.96,
+            "blocker": 0.04,
+            "permission": 0.05,
+            "unfinished": 0.52,
+            "deferred": 0.14,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.96), Unfinished work (0.52)",
+          "latencyMs": 501
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.96,
+            "blocker": 0.04,
+            "permission": 0.04,
+            "unfinished": 0.48,
+            "deferred": 0.12,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.96)",
+          "latencyMs": 622
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.96,
+            "blocker": 0.04,
+            "permission": 0.04,
+            "unfinished": 0.49,
+            "deferred": 0.13,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.96)",
+          "latencyMs": 502
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.96,
+            "blocker": 0.04,
+            "permission": 0.05,
+            "unfinished": 0.52,
+            "deferred": 0.13,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.96), Unfinished work (0.52)",
+          "latencyMs": 536
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.96,
+            "blocker": 0.04,
+            "permission": 0.05,
+            "unfinished": 0.55,
+            "deferred": 0.11,
+            "explicitStop": 0.02
+          },
+          "outcome": "continue",
+          "reason": "continue for Next action (0.96), Unfinished work (0.55)",
+          "latencyMs": 872
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "scope-tests-report-ru",
+        "group": "scope",
+        "request": "Запусти тесты и сообщи о падениях.",
+        "reply": "Тесты запущены. Два теста упали. Исправления не внесены.",
+        "activity": "[tool] bash {\"command\":\"npm test\"}\n[tool ok] bash: tests completed, two failures",
+        "expect": "quiet",
+        "why": "the completed Russian test report does not authorize fixes"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.06,
+            "blocker": 0.1,
+            "permission": 0.04,
+            "unfinished": 0.13,
+            "deferred": 0.04,
+            "explicitStop": 0.11
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 479
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.06,
+            "blocker": 0.11,
+            "permission": 0.04,
+            "unfinished": 0.15,
+            "deferred": 0.04,
+            "explicitStop": 0.1
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 513
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.06,
+            "blocker": 0.11,
+            "permission": 0.04,
+            "unfinished": 0.15,
+            "deferred": 0.04,
+            "explicitStop": 0.1
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 522
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.06,
+            "blocker": 0.1,
+            "permission": 0.04,
+            "unfinished": 0.12,
+            "deferred": 0.04,
+            "explicitStop": 0.1
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 527
+        },
+        {
+          "requestProbability": 0.97,
+          "verdict": {
+            "plannedAction": 0.06,
+            "blocker": 0.1,
+            "permission": 0.05,
+            "unfinished": 0.13,
+            "deferred": 0.04,
+            "explicitStop": 0.11
+          },
+          "outcome": "quiet",
+          "reason": "no confident next action or explicit unfinished work",
+          "latencyMs": 813
+        }
+      ],
+      "passed": true
+    },
+    {
+      "testCase": {
+        "id": "scope-tests-fix-ru",
+        "group": "scope",
+        "request": "Запусти тесты и исправь падения.",
+        "reply": "Тесты запущены. Два теста упали. Исправления не внесены.",
+        "activity": "[tool] bash {\"command\":\"npm test\"}\n[tool ok] bash: tests completed, two failures",
+        "expect": "continue",
+        "why": "the same Russian reply leaves the requested fixes incomplete"
+      },
+      "samples": [
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.07,
+            "blocker": 0.12,
+            "permission": 0.05,
+            "unfinished": 0.95,
+            "deferred": 0.04,
+            "explicitStop": 0.07
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.95)",
+          "latencyMs": 560
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.07,
+            "blocker": 0.12,
+            "permission": 0.04,
+            "unfinished": 0.95,
+            "deferred": 0.04,
+            "explicitStop": 0.08
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.95)",
+          "latencyMs": 537
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.06,
+            "blocker": 0.12,
+            "permission": 0.05,
+            "unfinished": 0.95,
+            "deferred": 0.04,
+            "explicitStop": 0.07
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.95)",
+          "latencyMs": 480
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.07,
+            "blocker": 0.14,
+            "permission": 0.05,
+            "unfinished": 0.95,
+            "deferred": 0.04,
+            "explicitStop": 0.07
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.95)",
+          "latencyMs": 476
+        },
+        {
+          "requestProbability": 0.98,
+          "verdict": {
+            "plannedAction": 0.07,
+            "blocker": 0.13,
+            "permission": 0.04,
+            "unfinished": 0.95,
+            "deferred": 0.04,
+            "explicitStop": 0.07
+          },
+          "outcome": "continue",
+          "reason": "continue for Unfinished work (0.95)",
+          "latencyMs": 489
+        }
+      ],
+      "passed": true
+    }
+  ]
+}

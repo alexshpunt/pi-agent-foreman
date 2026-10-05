@@ -48,7 +48,10 @@ describe("user request gate", () => {
       );
       expect(calls).toEqual(["request", "reply", "writer"]);
       expect(requestJudge).toHaveBeenCalledWith({ request }, signal);
-      expect(judge).toHaveBeenCalledWith({ reply: "The bug is not fixed." }, signal);
+      expect(judge).toHaveBeenCalledWith(
+        { request, activity: "Context.", reply: "The bug is not fixed." },
+        signal,
+      );
       expect(instructionRunner.run).toHaveBeenCalledWith(
         request,
         "Context.",

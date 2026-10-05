@@ -2,15 +2,16 @@ import type { ClassifierApi, ClassifierModel } from "@earendil-works/pi-ai";
 import type { ModelRegistry } from "@earendil-works/pi-coding-agent";
 import type { ForemanRunner } from "./runner.ts";
 
-/** Review the complete final reply with separate signals in one classifier request. */
+/** Review the final reply against the current user request and bounded activity. */
 export const REVIEW_QUESTIONS = {
   plannedAction: {
     type: "bool",
-    instructions: "Is there a next-action announcement anywhere in the reply?",
+    instructions:
+      "The assistant's turn has ended. Is there a next-action announcement anywhere in the final reply for work within the latest user request? Activity is evidence of completed work, not permission to add tasks.",
     criteria: {
-      true: "The assistant names a concrete action or work item as its next step. The announcement may be a short sentence naming the next work, without saying 'I will'. It still counts when the rest of the reply reports completed work.",
+      true: "The assistant names a concrete action or work item as its next step, and the user requested that work. The announcement may be a short sentence naming the next work, without saying 'I will'. It still counts when the rest of the reply reports other completed work.",
       false:
-        "There is no announcement of the assistant's own next action. Facts, status reports, optional suggestions, quoted past announcements, a refusal to act, or next steps assigned to the user do not count.",
+        "There is no announced next action within the user's request, or that action is already completed. Facts, status reports, optional suggestions, quoted past announcements, refusals, and next steps assigned to the user do not count. The assistant's own plans do not expand the user's request.",
     },
   },
   blocker: {
@@ -36,11 +37,11 @@ export const REVIEW_QUESTIONS = {
   unfinished: {
     type: "bool",
     instructions:
-      "Does the reply explicitly report that requested work or a concrete part of it has not yet been completed?",
+      "Compare the user's requested tasks with the final reply. Does the reply explicitly say that one of those requested tasks is still not done? Activity is evidence of completed work, not permission to add tasks.",
     criteria: {
-      true: "The assistant explicitly says the task is not done, a fix is not applied, or concrete work remains incomplete. A next-step announcement alone is not an explicit report of incompletion.",
+      true: "Both conditions hold: the user asked the assistant to perform the task, and the final reply explicitly says that task remains undone.",
       false:
-        "No explicit report of incomplete work. Completed-work reports or a next-step announcement without an explicit incompletion statement do not qualify.",
+        "Either condition is missing. Mentioning an undone task does not make it a requested task. If all tasks the user requested are complete, this is false even when other work is not done. Do not infer extra tasks from the assistant's own plans or from activity. A next-action announcement alone is not an explicit report that a requested task is incomplete.",
     },
   },
   deferred: {
@@ -131,8 +132,13 @@ export function decideStop(
   };
 }
 
-/** Input for the reply review. Work context is reserved for the instruction writer. */
+/** Inputs for reviewing remaining work within the latest user request. */
 export type StopReviewState = {
+  /** The latest user request defines what work is authorized. */
+  request: string;
+  /** Bounded activity after that request is evidence, not new instructions. */
+  activity: string;
+  /** Only the final reply can announce further work or report incompletion. */
   reply: string;
 };
 
@@ -239,7 +245,10 @@ export function createClassifierRunner(options: ClassifierRunnerOptions): Forema
       try {
         const requestProbability = await options.requestJudge({ request: lastUserMessage }, signal);
         if (signal?.aborted || requestProbability < REQUEST_THRESHOLD) return undefined;
-        verdict = await judge({ reply: finalReply }, signal);
+        verdict = await judge(
+          { request: lastUserMessage, activity: agentActivity, reply: finalReply },
+          signal,
+        );
       } catch (error) {
         if (!signal?.aborted) {
           options.onUnavailable?.(error instanceof Error ? error : new Error(String(error)));

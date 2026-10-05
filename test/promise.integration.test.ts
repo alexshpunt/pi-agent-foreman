@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import {
   assistantMessage,
@@ -7,6 +7,7 @@ import {
   PiRun,
   testArtifactsDir,
   text,
+  toolCall,
 } from "pi-coding-agent-test";
 import { afterEach, expect, it } from "vitest";
 
@@ -24,6 +25,66 @@ async function workspace() {
 }
 
 const extensions = [resolve("src/index.ts"), resolve("test/fixtures/promise-judge.ts")];
+
+it.each([
+  { request: "Find the cause.", continues: false },
+  { request: "Find and fix the cause.", continues: true },
+])(
+  "reviews the same work within '$request' through real Pi",
+  async ({ request, continues }) => {
+    const cwd = await workspace();
+    await writeFile(resolve(cwd, "cause.txt"), "Duplicate delivery comes from a second call.\n");
+    const reply = "The cause is known. The fix has not been applied.";
+    const result = await new PiIntegrationTest({
+      testName: continues ? "scope-fix" : "scope-report",
+      artifactsDir: testArtifactsDir(import.meta.filename),
+      cwd,
+      extensions,
+      rawMode: false,
+      tools: ["read"],
+      isolateUserResources: true,
+      environment: {
+        TYPESAFE_API_KEY: "test-key",
+        FOREMAN_TEST_SCOPE_VERDICTS: JSON.stringify({
+          "Find the cause.": { unfinished: 0.05 },
+          "Find and fix the cause.": { unfinished: 0.95 },
+        }),
+      },
+      conversation: [
+        assistantMessage(
+          [toolCall({ id: "read-cause", name: "read", arguments: { path: "cause.txt" } })],
+          { stopReason: "toolUse" },
+        ),
+        assistantMessage([text(reply)]),
+        ...(continues ? [assistantMessage([text("The run is complete.")])] : []),
+      ],
+    }).run(request);
+    expect(result.providerRequests).toHaveLength(continues ? 3 : 2);
+    const states = (await readFile(resolve(cwd, "judge-inputs.jsonl"), "utf8"))
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    expect(states[0]).toEqual({
+      request,
+      reply,
+      activity: expect.stringContaining("Duplicate delivery comes from a second call."),
+    });
+    expect(states[0].activity).toContain('[tool] read {"path":"cause.txt"}');
+    if (continues) {
+      expect(result.tuiRenderedOutput).toContain("Foreman sent the agent back to work");
+      const writer = JSON.parse(
+        (await readFile(resolve(cwd, "writer-inputs.jsonl"), "utf8")).trim().split("\n")[0] ?? "",
+      );
+      expect(JSON.stringify(writer)).toContain(request);
+    } else {
+      await expect(readFile(resolve(cwd, "writer-inputs.jsonl"), "utf8")).rejects.toMatchObject({
+        code: "ENOENT",
+      });
+      expect(result.tuiRenderedOutput).toContain("Foreman decided not to intervene");
+    }
+  },
+  60_000,
+);
 
 it.each([
   { name: "status-en", request: "What is left?", probability: 0.05, continues: false },
@@ -78,7 +139,14 @@ it.each([
         .trim()
         .split("\n")
         .map((line) => JSON.parse(line));
-      expect(replyStates).toEqual([{ reply }, { reply: "The run is complete." }]);
+      expect(replyStates).toEqual([
+        { request, activity: `[assistant] ${reply}`, reply },
+        expect.objectContaining({
+          request,
+          activity: expect.any(String),
+          reply: "The run is complete.",
+        }),
+      ]);
     } else {
       for (const file of ["judge-inputs.jsonl", "writer-inputs.jsonl"]) {
         await expect(readFile(resolve(cwd, file), "utf8")).rejects.toMatchObject({
@@ -237,7 +305,18 @@ it("turns a final promise into a nested instruction and one real Pi continuation
     .trim()
     .split("\n")
     .map((line) => JSON.parse(line));
-  expect(states).toEqual([{ reply: "Continuing the run." }, { reply: "The run is complete." }]);
+  expect(states).toEqual([
+    {
+      request: "Restore retries and continue the run.",
+      activity: "[assistant] Continuing the run.",
+      reply: "Continuing the run.",
+    },
+    expect.objectContaining({
+      request: "Restore retries and continue the run.",
+      activity: expect.any(String),
+      reply: "The run is complete.",
+    }),
+  ]);
   const requests = (await readFile(resolve(cwd, "judge-requests.jsonl"), "utf8"))
     .trim()
     .split("\n")
@@ -299,6 +378,8 @@ it("does not continue a completed answer without a next action", async () => {
     code: "ENOENT",
   });
   expect(JSON.parse((await readFile(resolve(cwd, "judge-inputs.jsonl"), "utf8")).trim())).toEqual({
+    request: "Update three files.",
+    activity: `[assistant] ${reply}`,
     reply,
   });
   expect(

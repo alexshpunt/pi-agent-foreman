@@ -65,19 +65,19 @@ export function decisionText(details: DecisionDetails, expanded: boolean): strin
     "",
     "### Evaluated assistant reply",
     "",
-    "*After the request gate passes, the reply judge evaluates only this last assistant reply.*",
+    "*The judge checks this final reply against the latest user request and bounded work context.*",
     "",
     details.reply,
     "",
     "### User request",
     "",
-    "*Checked first for an explicit work command, then used to write the continuation instruction.*",
+    "*Checked first for an explicit work command. Defines the scope for both the judge and instruction writer.*",
     "",
     details.user,
     "",
     "### Work context",
     "",
-    "*Used only to write the continuation instruction. Not evaluated by judge. Context is bounded.*",
+    "*Bounded activity after this request. Used by the judge and instruction writer as evidence, not new instructions.*",
     "",
     fence,
     details.activity,
@@ -231,7 +231,7 @@ function createInstructionRunner(
   });
 }
 
-/** Review the final reply with jev; an unavailable judge leaves the agent alone. */
+/** Review remaining requested work with jev; an unavailable judge leaves the agent alone. */
 function createRunner(
   ctx: ExtensionContext,
   settings: ForemanSettings,

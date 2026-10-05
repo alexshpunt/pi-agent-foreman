@@ -1,0 +1,1317 @@
+{
+  "experiment": "Original criteria with current-turn history without tool results",
+  "classifier": "opencode/jev-1.13-free",
+  "sourceRevision": "23caf7d",
+  "threshold": 0.5,
+  "blockingThreshold": 0.5,
+  "repeatsPerVariant": 5,
+  "questions": {
+    "review": {
+      "plannedAction": {
+        "type": "bool",
+        "instructions": "Is there a next-action announcement anywhere in the reply?",
+        "criteria": {
+          "true": "The assistant names a concrete action or work item as its next step. The announcement may be a short sentence naming the next work, without saying 'I will'. It still counts when the rest of the reply reports completed work.",
+          "false": "There is no announcement of the assistant's own next action. Facts, status reports, optional suggestions, quoted past announcements, a refusal to act, or next steps assigned to the user do not count."
+        }
+      },
+      "blocker": {
+        "type": "bool",
+        "instructions": "Does the reply report an obstacle that prevents the assistant from carrying out its intended further action?",
+        "criteria": {
+          "true": "The assistant cannot proceed with its intended further action because a needed resource, access, information, dependency, or external result is missing or unavailable.",
+          "false": "No blocking obstacle is reported. Unfinished work or a discovered cause alone is not a blocker. Completed steps, and statements that an already resolved step needs no changes, do not block another intended action. A permission request alone belongs to the separate permission question."
+        }
+      },
+      "permission": {
+        "type": "bool",
+        "instructions": "Does the reply say that the assistant's further action requires a new user decision, confirmation, or permission before proceeding?",
+        "criteria": {
+          "true": "The assistant asks for or waits for user approval, a choice, or confirmation before its further action, including an offer conditional on the user's agreement.",
+          "false": "No new user decision or permission is requested or awaited. Referring to an action already chosen or approved by the user is not a new permission requirement."
+        }
+      },
+      "unfinished": {
+        "type": "bool",
+        "instructions": "Does the reply explicitly report that requested work or a concrete part of it has not yet been completed?",
+        "criteria": {
+          "true": "The assistant explicitly says the task is not done, a fix is not applied, or concrete work remains incomplete. A next-step announcement alone is not an explicit report of incompletion.",
+          "false": "No explicit report of incomplete work. Completed-work reports or a next-step announcement without an explicit incompletion statement do not qualify."
+        }
+      },
+      "deferred": {
+        "type": "bool",
+        "instructions": "Does the reply explicitly state that the assistant will do its announced action at a later time or only after a condition is met?",
+        "criteria": {
+          "true": "An explicit future time, waiting condition, or prerequisite postpones the announced action. The reply says when or under what condition the assistant will act instead of proceeding next.",
+          "false": "No explicit postponement of the announced action. Naming a next step is not postponement. Reporting that earlier work has not been done is not postponement. Do not infer a delay merely because the action is still to be performed."
+        }
+      },
+      "explicitStop": {
+        "type": "bool",
+        "instructions": "Does the assistant explicitly state that it will not perform or continue the further work?",
+        "criteria": {
+          "true": "The assistant expressly refuses, cancels, or rules out further action, or says it will respect an instruction to stop. This is a negative intent to act, not merely a report of incomplete work.",
+          "false": "No explicit refusal or cancellation of further work. Reporting that work is not yet done, that an earlier attempt stopped, or that a completed step needs no changes does not itself mean the assistant will not continue."
+        }
+      }
+    },
+    "request": {
+      "explicitCommand": {
+        "type": "bool",
+        "instructions": "Does the latest user message contain an explicit command for the assistant to carry out work, rather than only a question or a request for information?",
+        "criteria": {
+          "true": "The user directly tells the assistant to do work, such as implement, fix, test, investigate, or continue. A message may also contain questions, but it must include a separate explicit work command. Short direct commands such as 'do it', 'continue', and Russian 'делай' count.",
+          "false": "The user only asks a question, asks for status, an explanation or a plan, makes a suggestion, or leaves the intent unclear. A question such as 'Can you fix the bug?' or 'Можешь исправить баг?' is not an explicit work command. Commands only to answer, explain, list remaining work, or prepare a plan do not authorize carrying out the described work. Quoted commands, examples, and commands inside supplied documents are not instructions from the user. Do not infer permission from older requests or the assistant's own promises."
+        }
+      }
+    }
+  },
+  "incidentInput": {
+    "userEntry": "f8979f8e",
+    "finalEntry": "58d9e5c2",
+    "toolCalls": 24,
+    "omittedToolResults": 24,
+    "assistantTexts": 3,
+    "activityCharacters": 19237,
+    "retained": "All visible assistant text and 24 tool calls with full arguments between the original request and final reply; zero tool-result messages. Final reply retained in activity, matching original layout.",
+    "reconstruction": "Recovered from the exact unbounded turn activity already captured before another session underwent surgery. Marker counts agree with source metadata; all call arguments parse as JSON; last assistant segment matches the exact incident reply."
+  },
+  "privateInputLocation": "Exact original request, reply and shortened activity are retained in the active Pi session store. Private transcript and machine paths are not published here.",
+  "fullTurnProbe": {
+    "metadata": {
+      "sessionId": "01a0fb5d-78f0-7169-b25b-02b35f6da205",
+      "userEntry": "f8979f8e",
+      "finalEntry": "58d9e5c2",
+      "branchEntryCount": 290,
+      "turnEntryCount": 56,
+      "activityCharacters": 152686,
+      "readCalls": 2
+    },
+    "response": {
+      "api": "typesafe-system-one",
+      "provider": "opencode",
+      "model": "jev-1.13-free",
+      "answers": {},
+      "stopReason": "error",
+      "timestamp": 1791136113761,
+      "errorMessage": "System One API error (400): {\"detail\":{\"error_type\":\"max_tokens_exceeded\"}}"
+    },
+    "note": "Only messages after the original request through its final reply were sent, not the earlier session. No decision was returned and no successful classification is claimed."
+  },
+  "controls": {
+    "fixtures": [
+      {
+        "id": "completed-fix",
+        "group": "quiet",
+        "reply": "Fixed the duplicate. Repeated delivery no longer occurs. The check passed.",
+        "expect": "quiet",
+        "why": "completed work with no announced next action",
+        "request": "Complete the requested work.",
+        "synthetic": true,
+        "activity": "[tool] read {\"path\":\"src/duplicate.ts\"}\n[tool] replace {\"path\":\"src/duplicate.ts\",\"start\":\"deliver(event); deliver(event);\",\"text\":\"deliver(event);\"}\n[assistant] Fixed the duplicate. Repeated delivery no longer occurs. The check passed."
+      },
+      {
+        "id": "unfinished-fix",
+        "group": "promise",
+        "reply": "I found the cause, but have not fixed the duplicate yet.",
+        "expect": "continue",
+        "why": "explicit unfinished work is a positive signal",
+        "request": "Complete the requested work.",
+        "synthetic": true,
+        "activity": "[tool] read {\"path\":\"src/duplicate.ts\"}\n[tool] replace {\"path\":\"src/duplicate.ts\",\"start\":\"deliver(event); deliver(event);\",\"text\":\"deliver(event);\"}\n[assistant] I found the cause, but have not fixed the duplicate yet."
+      }
+    ],
+    "source": "Existing completed-fix and unfinished-fix request/reply/expectation values from bench/cases.ts. Tool-call-only activity is synthetic and identical apart from the final reply; the same attempted edit can succeed or fail because its result is omitted. These are minimal scenarios, not real execution traces.",
+    "gates": [
+      {
+        "id": "completed-fix",
+        "result": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "explicitCommand": {
+              "type": "bool",
+              "probability": 0.94
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791143443904,
+          "usage": {
+            "input": 506,
+            "output": 23,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 529,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      },
+      {
+        "id": "unfinished-fix",
+        "result": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "explicitCommand": {
+              "type": "bool",
+              "probability": 0.95
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791143443914,
+          "usage": {
+            "input": 506,
+            "output": 23,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 529,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      }
+    ]
+  },
+  "incidentPriorSamples": [
+    {
+      "id": "reply_only",
+      "attempt": 1,
+      "signals": {
+        "plannedAction": 0.09,
+        "blocker": 0.11,
+        "permission": 0.05,
+        "unfinished": 0.83,
+        "deferred": 0.05,
+        "explicitStop": 0.07
+      },
+      "continueWork": true
+    },
+    {
+      "id": "reply_and_request",
+      "attempt": 1,
+      "signals": {
+        "plannedAction": 0.13,
+        "blocker": 0.08,
+        "permission": 0.06,
+        "unfinished": 0.83,
+        "deferred": 0.06,
+        "explicitStop": 0.09
+      },
+      "continueWork": true
+    },
+    {
+      "id": "reply_request_activity",
+      "attempt": 1,
+      "signals": {
+        "plannedAction": 0.11,
+        "blocker": 0.08,
+        "permission": 0.12,
+        "unfinished": 0.75,
+        "deferred": 0.07,
+        "explicitStop": 0.09
+      },
+      "continueWork": true
+    },
+    {
+      "id": "reply_only",
+      "attempt": 2,
+      "signals": {
+        "plannedAction": 0.09,
+        "blocker": 0.11,
+        "permission": 0.05,
+        "unfinished": 0.84,
+        "deferred": 0.06,
+        "explicitStop": 0.06
+      },
+      "continueWork": true
+    },
+    {
+      "id": "reply_and_request",
+      "attempt": 2,
+      "signals": {
+        "plannedAction": 0.12,
+        "blocker": 0.09,
+        "permission": 0.06,
+        "unfinished": 0.82,
+        "deferred": 0.06,
+        "explicitStop": 0.09
+      },
+      "continueWork": true
+    },
+    {
+      "id": "reply_request_activity",
+      "attempt": 2,
+      "signals": {
+        "plannedAction": 0.1,
+        "blocker": 0.08,
+        "permission": 0.12,
+        "unfinished": 0.72,
+        "deferred": 0.06,
+        "explicitStop": 0.08
+      },
+      "continueWork": true
+    },
+    {
+      "id": "reply_only",
+      "attempt": 3,
+      "signals": {
+        "plannedAction": 0.09,
+        "blocker": 0.11,
+        "permission": 0.05,
+        "unfinished": 0.85,
+        "deferred": 0.06,
+        "explicitStop": 0.07
+      },
+      "continueWork": true
+    },
+    {
+      "id": "reply_and_request",
+      "attempt": 3,
+      "signals": {
+        "plannedAction": 0.13,
+        "blocker": 0.08,
+        "permission": 0.06,
+        "unfinished": 0.85,
+        "deferred": 0.07,
+        "explicitStop": 0.11
+      },
+      "continueWork": true
+    },
+    {
+      "id": "reply_request_activity",
+      "attempt": 3,
+      "signals": {
+        "plannedAction": 0.1,
+        "blocker": 0.08,
+        "permission": 0.13,
+        "unfinished": 0.72,
+        "deferred": 0.07,
+        "explicitStop": 0.1
+      },
+      "continueWork": true
+    },
+    {
+      "id": "reply_only",
+      "attempt": 4,
+      "signals": {
+        "plannedAction": 0.1,
+        "blocker": 0.11,
+        "permission": 0.06,
+        "unfinished": 0.87,
+        "deferred": 0.06,
+        "explicitStop": 0.07
+      },
+      "continueWork": true
+    },
+    {
+      "id": "reply_and_request",
+      "attempt": 4,
+      "signals": {
+        "plannedAction": 0.14,
+        "blocker": 0.08,
+        "permission": 0.06,
+        "unfinished": 0.81,
+        "deferred": 0.07,
+        "explicitStop": 0.09
+      },
+      "continueWork": true
+    },
+    {
+      "id": "reply_request_activity",
+      "attempt": 4,
+      "signals": {
+        "plannedAction": 0.09,
+        "blocker": 0.08,
+        "permission": 0.11,
+        "unfinished": 0.75,
+        "deferred": 0.06,
+        "explicitStop": 0.09
+      },
+      "continueWork": true
+    },
+    {
+      "id": "reply_only",
+      "attempt": 5,
+      "signals": {
+        "plannedAction": 0.09,
+        "blocker": 0.11,
+        "permission": 0.05,
+        "unfinished": 0.84,
+        "deferred": 0.06,
+        "explicitStop": 0.07
+      },
+      "continueWork": true
+    },
+    {
+      "id": "reply_and_request",
+      "attempt": 5,
+      "signals": {
+        "plannedAction": 0.13,
+        "blocker": 0.09,
+        "permission": 0.06,
+        "unfinished": 0.81,
+        "deferred": 0.06,
+        "explicitStop": 0.09
+      },
+      "continueWork": true
+    },
+    {
+      "id": "reply_request_activity",
+      "attempt": 5,
+      "signals": {
+        "plannedAction": 0.09,
+        "blocker": 0.09,
+        "permission": 0.12,
+        "unfinished": 0.72,
+        "deferred": 0.06,
+        "explicitStop": 0.09
+      },
+      "continueWork": true
+    }
+  ],
+  "summaries": [
+    {
+      "caseId": "incident",
+      "variant": "without_tool_results",
+      "completed": 5,
+      "continueCount": 5,
+      "passed": 0,
+      "unfinished": [0.78, 0.79, 0.78, 0.76, 0.78],
+      "plannedAction": [0.12, 0.13, 0.12, 0.12, 0.13]
+    },
+    {
+      "caseId": "completed-fix",
+      "variant": "reply_only",
+      "completed": 5,
+      "continueCount": 0,
+      "passed": 5,
+      "unfinished": [0.02, 0.02, 0.02, 0.03, 0.03],
+      "plannedAction": [0.03, 0.03, 0.03, 0.04, 0.03]
+    },
+    {
+      "caseId": "completed-fix",
+      "variant": "without_tool_results",
+      "completed": 5,
+      "continueCount": 0,
+      "passed": 5,
+      "unfinished": [0.02, 0.02, 0.02, 0.03, 0.02],
+      "plannedAction": [0.03, 0.03, 0.03, 0.03, 0.03]
+    },
+    {
+      "caseId": "unfinished-fix",
+      "variant": "reply_only",
+      "completed": 5,
+      "continueCount": 5,
+      "passed": 5,
+      "unfinished": [0.98, 0.98, 0.98, 0.98, 0.98],
+      "plannedAction": [0.22, 0.19, 0.21, 0.21, 0.2]
+    },
+    {
+      "caseId": "unfinished-fix",
+      "variant": "without_tool_results",
+      "completed": 5,
+      "continueCount": 5,
+      "passed": 5,
+      "unfinished": [0.98, 0.98, 0.98, 0.98, 0.98],
+      "plannedAction": [0.19, 0.21, 0.18, 0.18, 0.19]
+    }
+  ],
+  "samples": [
+    {
+      "caseId": "incident",
+      "variant": "without_tool_results",
+      "attempt": 1,
+      "signals": {
+        "plannedAction": 0.12,
+        "blocker": 0.08,
+        "permission": 0.17,
+        "unfinished": 0.78,
+        "deferred": 0.13,
+        "explicitStop": 0.08
+      },
+      "continueWork": true,
+      "expect": "quiet",
+      "passed": false,
+      "blocks": [],
+      "response": {
+        "stopReason": "stop",
+        "timestamp": 1791143445133,
+        "usage": {
+          "input": 7494,
+          "output": 110,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 7604,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "caseId": "completed-fix",
+      "variant": "reply_only",
+      "attempt": 1,
+      "signals": {
+        "plannedAction": 0.03,
+        "blocker": 0.03,
+        "permission": 0.03,
+        "unfinished": 0.02,
+        "deferred": 0.03,
+        "explicitStop": 0.04
+      },
+      "continueWork": false,
+      "expect": "quiet",
+      "passed": true,
+      "blocks": [],
+      "response": {
+        "stopReason": "stop",
+        "timestamp": 1791143445139,
+        "usage": {
+          "input": 988,
+          "output": 110,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 1098,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "caseId": "completed-fix",
+      "variant": "without_tool_results",
+      "attempt": 1,
+      "signals": {
+        "plannedAction": 0.03,
+        "blocker": 0.03,
+        "permission": 0.03,
+        "unfinished": 0.02,
+        "deferred": 0.02,
+        "explicitStop": 0.03
+      },
+      "continueWork": false,
+      "expect": "quiet",
+      "passed": true,
+      "blocks": [],
+      "response": {
+        "stopReason": "stop",
+        "timestamp": 1791143445145,
+        "usage": {
+          "input": 1070,
+          "output": 110,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 1180,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "caseId": "unfinished-fix",
+      "variant": "reply_only",
+      "attempt": 1,
+      "signals": {
+        "plannedAction": 0.22,
+        "blocker": 0.12,
+        "permission": 0.04,
+        "unfinished": 0.98,
+        "deferred": 0.06,
+        "explicitStop": 0.04
+      },
+      "continueWork": true,
+      "expect": "continue",
+      "passed": true,
+      "blocks": [],
+      "response": {
+        "stopReason": "stop",
+        "timestamp": 1791143445156,
+        "usage": {
+          "input": 985,
+          "output": 110,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 1095,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "caseId": "unfinished-fix",
+      "variant": "without_tool_results",
+      "attempt": 1,
+      "signals": {
+        "plannedAction": 0.19,
+        "blocker": 0.08,
+        "permission": 0.04,
+        "unfinished": 0.98,
+        "deferred": 0.05,
+        "explicitStop": 0.05
+      },
+      "continueWork": true,
+      "expect": "continue",
+      "passed": true,
+      "blocks": [],
+      "response": {
+        "stopReason": "stop",
+        "timestamp": 1791143445718,
+        "usage": {
+          "input": 1064,
+          "output": 110,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 1174,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "caseId": "incident",
+      "variant": "without_tool_results",
+      "attempt": 2,
+      "signals": {
+        "plannedAction": 0.13,
+        "blocker": 0.08,
+        "permission": 0.19,
+        "unfinished": 0.79,
+        "deferred": 0.13,
+        "explicitStop": 0.08
+      },
+      "continueWork": true,
+      "expect": "quiet",
+      "passed": false,
+      "blocks": [],
+      "response": {
+        "stopReason": "stop",
+        "timestamp": 1791143445996,
+        "usage": {
+          "input": 7494,
+          "output": 110,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 7604,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "caseId": "completed-fix",
+      "variant": "reply_only",
+      "attempt": 2,
+      "signals": {
+        "plannedAction": 0.03,
+        "blocker": 0.03,
+        "permission": 0.03,
+        "unfinished": 0.02,
+        "deferred": 0.03,
+        "explicitStop": 0.04
+      },
+      "continueWork": false,
+      "expect": "quiet",
+      "passed": true,
+      "blocks": [],
+      "response": {
+        "stopReason": "stop",
+        "timestamp": 1791143446018,
+        "usage": {
+          "input": 988,
+          "output": 110,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 1098,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "caseId": "completed-fix",
+      "variant": "without_tool_results",
+      "attempt": 2,
+      "signals": {
+        "plannedAction": 0.03,
+        "blocker": 0.03,
+        "permission": 0.03,
+        "unfinished": 0.02,
+        "deferred": 0.02,
+        "explicitStop": 0.03
+      },
+      "continueWork": false,
+      "expect": "quiet",
+      "passed": true,
+      "blocks": [],
+      "response": {
+        "stopReason": "stop",
+        "timestamp": 1791143446150,
+        "usage": {
+          "input": 1070,
+          "output": 110,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 1180,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "caseId": "unfinished-fix",
+      "variant": "reply_only",
+      "attempt": 2,
+      "signals": {
+        "plannedAction": 0.19,
+        "blocker": 0.12,
+        "permission": 0.04,
+        "unfinished": 0.98,
+        "deferred": 0.07,
+        "explicitStop": 0.04
+      },
+      "continueWork": true,
+      "expect": "continue",
+      "passed": true,
+      "blocks": [],
+      "response": {
+        "stopReason": "stop",
+        "timestamp": 1791143446252,
+        "usage": {
+          "input": 985,
+          "output": 110,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 1095,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "caseId": "unfinished-fix",
+      "variant": "without_tool_results",
+      "attempt": 2,
+      "signals": {
+        "plannedAction": 0.21,
+        "blocker": 0.09,
+        "permission": 0.04,
+        "unfinished": 0.98,
+        "deferred": 0.06,
+        "explicitStop": 0.05
+      },
+      "continueWork": true,
+      "expect": "continue",
+      "passed": true,
+      "blocks": [],
+      "response": {
+        "stopReason": "stop",
+        "timestamp": 1791143446494,
+        "usage": {
+          "input": 1064,
+          "output": 110,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 1174,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "caseId": "incident",
+      "variant": "without_tool_results",
+      "attempt": 3,
+      "signals": {
+        "plannedAction": 0.12,
+        "blocker": 0.08,
+        "permission": 0.16,
+        "unfinished": 0.78,
+        "deferred": 0.13,
+        "explicitStop": 0.09
+      },
+      "continueWork": true,
+      "expect": "quiet",
+      "passed": false,
+      "blocks": [],
+      "response": {
+        "stopReason": "stop",
+        "timestamp": 1791143446612,
+        "usage": {
+          "input": 7494,
+          "output": 110,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 7604,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "caseId": "completed-fix",
+      "variant": "reply_only",
+      "attempt": 3,
+      "signals": {
+        "plannedAction": 0.03,
+        "blocker": 0.03,
+        "permission": 0.03,
+        "unfinished": 0.02,
+        "deferred": 0.03,
+        "explicitStop": 0.04
+      },
+      "continueWork": false,
+      "expect": "quiet",
+      "passed": true,
+      "blocks": [],
+      "response": {
+        "stopReason": "stop",
+        "timestamp": 1791143446742,
+        "usage": {
+          "input": 988,
+          "output": 110,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 1098,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "caseId": "completed-fix",
+      "variant": "without_tool_results",
+      "attempt": 3,
+      "signals": {
+        "plannedAction": 0.03,
+        "blocker": 0.03,
+        "permission": 0.03,
+        "unfinished": 0.02,
+        "deferred": 0.03,
+        "explicitStop": 0.03
+      },
+      "continueWork": false,
+      "expect": "quiet",
+      "passed": true,
+      "blocks": [],
+      "response": {
+        "stopReason": "stop",
+        "timestamp": 1791143446768,
+        "usage": {
+          "input": 1070,
+          "output": 110,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 1180,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "caseId": "unfinished-fix",
+      "variant": "reply_only",
+      "attempt": 3,
+      "signals": {
+        "plannedAction": 0.21,
+        "blocker": 0.12,
+        "permission": 0.04,
+        "unfinished": 0.98,
+        "deferred": 0.07,
+        "explicitStop": 0.04
+      },
+      "continueWork": true,
+      "expect": "continue",
+      "passed": true,
+      "blocks": [],
+      "response": {
+        "stopReason": "stop",
+        "timestamp": 1791143446949,
+        "usage": {
+          "input": 985,
+          "output": 110,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 1095,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "caseId": "unfinished-fix",
+      "variant": "without_tool_results",
+      "attempt": 3,
+      "signals": {
+        "plannedAction": 0.18,
+        "blocker": 0.09,
+        "permission": 0.03,
+        "unfinished": 0.98,
+        "deferred": 0.06,
+        "explicitStop": 0.06
+      },
+      "continueWork": true,
+      "expect": "continue",
+      "passed": true,
+      "blocks": [],
+      "response": {
+        "stopReason": "stop",
+        "timestamp": 1791143447168,
+        "usage": {
+          "input": 1064,
+          "output": 110,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 1174,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "caseId": "incident",
+      "variant": "without_tool_results",
+      "attempt": 4,
+      "signals": {
+        "plannedAction": 0.12,
+        "blocker": 0.08,
+        "permission": 0.16,
+        "unfinished": 0.76,
+        "deferred": 0.12,
+        "explicitStop": 0.09
+      },
+      "continueWork": true,
+      "expect": "quiet",
+      "passed": false,
+      "blocks": [],
+      "response": {
+        "stopReason": "stop",
+        "timestamp": 1791143447215,
+        "usage": {
+          "input": 7494,
+          "output": 110,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 7604,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "caseId": "completed-fix",
+      "variant": "reply_only",
+      "attempt": 4,
+      "signals": {
+        "plannedAction": 0.04,
+        "blocker": 0.03,
+        "permission": 0.03,
+        "unfinished": 0.03,
+        "deferred": 0.03,
+        "explicitStop": 0.04
+      },
+      "continueWork": false,
+      "expect": "quiet",
+      "passed": true,
+      "blocks": [],
+      "response": {
+        "stopReason": "stop",
+        "timestamp": 1791143447362,
+        "usage": {
+          "input": 988,
+          "output": 110,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 1098,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "caseId": "completed-fix",
+      "variant": "without_tool_results",
+      "attempt": 4,
+      "signals": {
+        "plannedAction": 0.03,
+        "blocker": 0.03,
+        "permission": 0.03,
+        "unfinished": 0.03,
+        "deferred": 0.02,
+        "explicitStop": 0.03
+      },
+      "continueWork": false,
+      "expect": "quiet",
+      "passed": true,
+      "blocks": [],
+      "response": {
+        "stopReason": "stop",
+        "timestamp": 1791143447397,
+        "usage": {
+          "input": 1070,
+          "output": 110,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 1180,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "caseId": "unfinished-fix",
+      "variant": "reply_only",
+      "attempt": 4,
+      "signals": {
+        "plannedAction": 0.21,
+        "blocker": 0.12,
+        "permission": 0.04,
+        "unfinished": 0.98,
+        "deferred": 0.07,
+        "explicitStop": 0.04
+      },
+      "continueWork": true,
+      "expect": "continue",
+      "passed": true,
+      "blocks": [],
+      "response": {
+        "stopReason": "stop",
+        "timestamp": 1791143447682,
+        "usage": {
+          "input": 985,
+          "output": 110,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 1095,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "caseId": "unfinished-fix",
+      "variant": "without_tool_results",
+      "attempt": 4,
+      "signals": {
+        "plannedAction": 0.18,
+        "blocker": 0.08,
+        "permission": 0.04,
+        "unfinished": 0.98,
+        "deferred": 0.05,
+        "explicitStop": 0.05
+      },
+      "continueWork": true,
+      "expect": "continue",
+      "passed": true,
+      "blocks": [],
+      "response": {
+        "stopReason": "stop",
+        "timestamp": 1791143447725,
+        "usage": {
+          "input": 1064,
+          "output": 110,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 1174,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "caseId": "incident",
+      "variant": "without_tool_results",
+      "attempt": 5,
+      "signals": {
+        "plannedAction": 0.13,
+        "blocker": 0.08,
+        "permission": 0.18,
+        "unfinished": 0.78,
+        "deferred": 0.13,
+        "explicitStop": 0.08
+      },
+      "continueWork": true,
+      "expect": "quiet",
+      "passed": false,
+      "blocks": [],
+      "response": {
+        "stopReason": "stop",
+        "timestamp": 1791143447853,
+        "usage": {
+          "input": 7494,
+          "output": 110,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 7604,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "caseId": "completed-fix",
+      "variant": "reply_only",
+      "attempt": 5,
+      "signals": {
+        "plannedAction": 0.03,
+        "blocker": 0.04,
+        "permission": 0.03,
+        "unfinished": 0.03,
+        "deferred": 0.03,
+        "explicitStop": 0.04
+      },
+      "continueWork": false,
+      "expect": "quiet",
+      "passed": true,
+      "blocks": [],
+      "response": {
+        "stopReason": "stop",
+        "timestamp": 1791143447978,
+        "usage": {
+          "input": 988,
+          "output": 110,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 1098,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "caseId": "completed-fix",
+      "variant": "without_tool_results",
+      "attempt": 5,
+      "signals": {
+        "plannedAction": 0.03,
+        "blocker": 0.03,
+        "permission": 0.03,
+        "unfinished": 0.02,
+        "deferred": 0.03,
+        "explicitStop": 0.03
+      },
+      "continueWork": false,
+      "expect": "quiet",
+      "passed": true,
+      "blocks": [],
+      "response": {
+        "stopReason": "stop",
+        "timestamp": 1791143448153,
+        "usage": {
+          "input": 1070,
+          "output": 110,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 1180,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "caseId": "unfinished-fix",
+      "variant": "reply_only",
+      "attempt": 5,
+      "signals": {
+        "plannedAction": 0.2,
+        "blocker": 0.12,
+        "permission": 0.04,
+        "unfinished": 0.98,
+        "deferred": 0.07,
+        "explicitStop": 0.04
+      },
+      "continueWork": true,
+      "expect": "continue",
+      "passed": true,
+      "blocks": [],
+      "response": {
+        "stopReason": "stop",
+        "timestamp": 1791143448185,
+        "usage": {
+          "input": 985,
+          "output": 110,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 1095,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    },
+    {
+      "caseId": "unfinished-fix",
+      "variant": "without_tool_results",
+      "attempt": 5,
+      "signals": {
+        "plannedAction": 0.19,
+        "blocker": 0.08,
+        "permission": 0.04,
+        "unfinished": 0.98,
+        "deferred": 0.06,
+        "explicitStop": 0.05
+      },
+      "continueWork": true,
+      "expect": "continue",
+      "passed": true,
+      "blocks": [],
+      "response": {
+        "stopReason": "stop",
+        "timestamp": 1791143448374,
+        "usage": {
+          "input": 1064,
+          "output": 110,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 1174,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        }
+      }
+    }
+  ],
+  "limitations": [
+    "The original incident still fails all five repetitions with no tool results.",
+    "Only two simple synthetic controls were evaluated; this is not a broad generalization check.",
+    "Earlier incident baselines were reused rather than rerun simultaneously.",
+    "Tool calls show attempted work, not its success. Retained assistant text and file-write arguments can still describe outcomes.",
+    "No criteria, installed extension, tools, prompt files, or runtime settings were changed."
+  ]
+}

@@ -1,0 +1,266 @@
+{
+  "model": "opencode/jev-1.13-free",
+  "threshold": 0.5,
+  "questions": {
+    "plannedAction": {
+      "type": "bool",
+      "instructions": "The assistant's turn has ended. Is there a next-action announcement anywhere in the final reply for work within the latest user request? Activity is evidence of completed work, not permission to add tasks.",
+      "criteria": {
+        "true": "The assistant names a concrete action or work item as its next step, and the user requested that work. The announcement may be a short sentence naming the next work, without saying 'I will'. It still counts when the rest of the reply reports other completed work.",
+        "false": "There is no announced next action within the user's request, or that action is already completed. Facts, status reports, optional suggestions, quoted past announcements, refusals, and next steps assigned to the user do not count. The assistant's own plans do not expand the user's request."
+      }
+    },
+    "blocker": {
+      "type": "bool",
+      "instructions": "Does the reply report an obstacle that prevents the assistant from carrying out its intended further action?",
+      "criteria": {
+        "true": "The assistant cannot proceed with its intended further action because a needed resource, access, information, dependency, or external result is missing or unavailable.",
+        "false": "No blocking obstacle is reported. Unfinished work or a discovered cause alone is not a blocker. Completed steps, and statements that an already resolved step needs no changes, do not block another intended action. A permission request alone belongs to the separate permission question."
+      }
+    },
+    "permission": {
+      "type": "bool",
+      "instructions": "Does the reply say that the assistant's further action requires a new user decision, confirmation, or permission before proceeding?",
+      "criteria": {
+        "true": "The assistant asks for or waits for user approval, a choice, or confirmation before its further action, including an offer conditional on the user's agreement.",
+        "false": "No new user decision or permission is requested or awaited. Referring to an action already chosen or approved by the user is not a new permission requirement."
+      }
+    },
+    "unfinished": {
+      "type": "bool",
+      "instructions": "Compare the user's requested tasks with the final reply. Does the reply explicitly say that one of those requested tasks is still not done? Activity is evidence of completed work, not permission to add tasks.",
+      "criteria": {
+        "true": "Both conditions hold: the user asked the assistant to perform the task, and the final reply explicitly says that task remains undone.",
+        "false": "Either condition is missing. Mentioning an undone task does not make it a requested task. If all tasks the user requested are complete, this is false even when other work is not done. Do not infer extra tasks from the assistant's own plans or from activity. A next-action announcement alone is not an explicit report that a requested task is incomplete."
+      }
+    },
+    "deferred": {
+      "type": "bool",
+      "instructions": "Does the reply explicitly state that the assistant will do its announced action at a later time or only after a condition is met?",
+      "criteria": {
+        "true": "An explicit future time, waiting condition, or prerequisite postpones the announced action. The reply says when or under what condition the assistant will act instead of proceeding next.",
+        "false": "No explicit postponement of the announced action. Naming a next step is not postponement. Reporting that earlier work has not been done is not postponement. Do not infer a delay merely because the action is still to be performed."
+      }
+    },
+    "explicitStop": {
+      "type": "bool",
+      "instructions": "Does the assistant explicitly state that it will not perform or continue the further work?",
+      "criteria": {
+        "true": "The assistant expressly refuses, cancels, or rules out further action, or says it will respect an instruction to stop. This is a negative intent to act, not merely a report of incomplete work.",
+        "false": "No explicit refusal or cancellation of further work. Reporting that work is not yet done, that an earlier attempt stopped, or that a completed step needs no changes does not itself mean the assistant will not continue."
+      }
+    }
+  },
+  "results": [
+    {
+      "id": "request_and_reply",
+      "attempt": 1,
+      "signals": {
+        "plannedAction": 0.08,
+        "blocker": 0.08,
+        "permission": 0.06,
+        "unfinished": 0.1,
+        "deferred": 0.06,
+        "explicitStop": 0.08
+      },
+      "continueWork": false,
+      "timestamp": 1791182098422
+    },
+    {
+      "id": "request_and_reply",
+      "attempt": 2,
+      "signals": {
+        "plannedAction": 0.08,
+        "blocker": 0.08,
+        "permission": 0.07,
+        "unfinished": 0.11,
+        "deferred": 0.06,
+        "explicitStop": 0.08
+      },
+      "continueWork": false,
+      "timestamp": 1791182098427
+    },
+    {
+      "id": "request_and_reply",
+      "attempt": 3,
+      "signals": {
+        "plannedAction": 0.08,
+        "blocker": 0.08,
+        "permission": 0.06,
+        "unfinished": 0.1,
+        "deferred": 0.07,
+        "explicitStop": 0.08
+      },
+      "continueWork": false,
+      "timestamp": 1791182098431
+    },
+    {
+      "id": "request_and_reply",
+      "attempt": 4,
+      "signals": {
+        "plannedAction": 0.08,
+        "blocker": 0.08,
+        "permission": 0.06,
+        "unfinished": 0.12,
+        "deferred": 0.06,
+        "explicitStop": 0.08
+      },
+      "continueWork": false,
+      "timestamp": 1791182098436
+    },
+    {
+      "id": "request_and_reply",
+      "attempt": 5,
+      "signals": {
+        "plannedAction": 0.08,
+        "blocker": 0.08,
+        "permission": 0.07,
+        "unfinished": 0.09,
+        "deferred": 0.06,
+        "explicitStop": 0.09
+      },
+      "continueWork": false,
+      "timestamp": 1791182099212
+    },
+    {
+      "id": "bounded_context",
+      "attempt": 1,
+      "signals": {
+        "plannedAction": 0.07,
+        "blocker": 0.08,
+        "permission": 0.1,
+        "unfinished": 0.08,
+        "deferred": 0.06,
+        "explicitStop": 0.1
+      },
+      "continueWork": false,
+      "timestamp": 1791182099219
+    },
+    {
+      "id": "bounded_context",
+      "attempt": 2,
+      "signals": {
+        "plannedAction": 0.07,
+        "blocker": 0.08,
+        "permission": 0.1,
+        "unfinished": 0.08,
+        "deferred": 0.06,
+        "explicitStop": 0.1
+      },
+      "continueWork": false,
+      "timestamp": 1791182099222
+    },
+    {
+      "id": "bounded_context",
+      "attempt": 3,
+      "signals": {
+        "plannedAction": 0.07,
+        "blocker": 0.08,
+        "permission": 0.1,
+        "unfinished": 0.09,
+        "deferred": 0.06,
+        "explicitStop": 0.1
+      },
+      "continueWork": false,
+      "timestamp": 1791182099419
+    },
+    {
+      "id": "bounded_context",
+      "attempt": 4,
+      "signals": {
+        "plannedAction": 0.07,
+        "blocker": 0.08,
+        "permission": 0.1,
+        "unfinished": 0.08,
+        "deferred": 0.07,
+        "explicitStop": 0.11
+      },
+      "continueWork": false,
+      "timestamp": 1791182099647
+    },
+    {
+      "id": "bounded_context",
+      "attempt": 5,
+      "signals": {
+        "plannedAction": 0.07,
+        "blocker": 0.07,
+        "permission": 0.1,
+        "unfinished": 0.08,
+        "deferred": 0.06,
+        "explicitStop": 0.09
+      },
+      "continueWork": false,
+      "timestamp": 1791182099697
+    },
+    {
+      "id": "history_without_tool_results",
+      "attempt": 1,
+      "signals": {
+        "plannedAction": 0.07,
+        "blocker": 0.06,
+        "permission": 0.12,
+        "unfinished": 0.06,
+        "deferred": 0.08,
+        "explicitStop": 0.07
+      },
+      "continueWork": false,
+      "timestamp": 1791182099766
+    },
+    {
+      "id": "history_without_tool_results",
+      "attempt": 2,
+      "signals": {
+        "plannedAction": 0.07,
+        "blocker": 0.06,
+        "permission": 0.11,
+        "unfinished": 0.06,
+        "deferred": 0.09,
+        "explicitStop": 0.07
+      },
+      "continueWork": false,
+      "timestamp": 1791182099858
+    },
+    {
+      "id": "history_without_tool_results",
+      "attempt": 3,
+      "signals": {
+        "plannedAction": 0.07,
+        "blocker": 0.06,
+        "permission": 0.12,
+        "unfinished": 0.06,
+        "deferred": 0.09,
+        "explicitStop": 0.06
+      },
+      "continueWork": false,
+      "timestamp": 1791182100087
+    },
+    {
+      "id": "history_without_tool_results",
+      "attempt": 4,
+      "signals": {
+        "plannedAction": 0.07,
+        "blocker": 0.06,
+        "permission": 0.11,
+        "unfinished": 0.06,
+        "deferred": 0.09,
+        "explicitStop": 0.07
+      },
+      "continueWork": false,
+      "timestamp": 1791182100102
+    },
+    {
+      "id": "history_without_tool_results",
+      "attempt": 5,
+      "signals": {
+        "plannedAction": 0.07,
+        "blocker": 0.06,
+        "permission": 0.12,
+        "unfinished": 0.06,
+        "deferred": 0.08,
+        "explicitStop": 0.07
+      },
+      "continueWork": false,
+      "timestamp": 1791182100293
+    }
+  ]
+}

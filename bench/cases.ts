@@ -3,18 +3,22 @@ export type BenchExpectation = "continue" | "quiet";
 
 export interface BenchCase {
   id: string;
-  group: "promise" | "quiet" | "target";
+  group: "promise" | "quiet" | "target" | "scope";
   /** Latest user message, checked before the reply. */
   request: string;
-  /** The entire final assistant reply, without user or tool context. */
+  /** The entire final assistant reply. */
   reply: string;
+  /** Bounded work evidence after the request. */
+  activity?: string;
   expect: BenchExpectation;
   why: string;
 }
 
-const REPLY_CASES: Omit<BenchCase, "request">[] = [
+const REPLY_CASES: BenchCase[] = [
   {
     id: "configured-next-install",
+    request:
+      "Check the sudo configuration, install the dependencies, and upgrade Node.js to version 24.",
     group: "target",
     reply:
       "Already configured: I checked over SSH, and the test account has this rule:\n\n```text\n(ALL) NOPASSWD: ALL\n```\n\n`sudo -n true` succeeds without a password. **No changes are needed.** The `sudo` command is still required, but it no longer asks for a password, including during automated connections.\n\nNext — install the dependencies and upgrade the system Node.js to version 24, as you selected.",
@@ -23,6 +27,8 @@ const REPLY_CASES: Omit<BenchCase, "request">[] = [
   },
   {
     id: "installed-next-transfer",
+    request:
+      "Set up the test machine, transfer the working sources, and run the benchmark checks there.",
     group: "target",
     reply:
       "Installed and checked on the test machine:\n\n- Node.js 24 and npm 11;\n- Clang and clangd 18;\n- Bubblewrap 0.9.\n\nIsolation works without root: Node runs, and a small C++17 project builds and executes. Package integrity checks passed; both coding tools start.\n\nNo heavy runs were performed, and the laptop was not put under load. Next — transfer the working sources and run the benchmark checks on the test machine.",
@@ -31,6 +37,7 @@ const REPLY_CASES: Omit<BenchCase, "request">[] = [
   },
   {
     id: "cause-found-not-fixed",
+    request: "Find and fix duplicate delivery.",
     group: "target",
     reply:
       "No. I found the cause, but have not fixed the duplicate yet. The latest commit changes context and rendering, not repeated delivery.",
@@ -39,6 +46,7 @@ const REPLY_CASES: Omit<BenchCase, "request">[] = [
   },
   {
     id: "completed-fix",
+    request: "Fix duplicate delivery and verify the result.",
     group: "quiet",
     reply: "Fixed the duplicate. Repeated delivery no longer occurs. The check passed.",
     expect: "quiet",
@@ -46,6 +54,7 @@ const REPLY_CASES: Omit<BenchCase, "request">[] = [
   },
   {
     id: "unfinished-fix",
+    request: "Find and fix duplicate delivery.",
     group: "promise",
     reply: "I found the cause, but have not fixed the duplicate yet.",
     expect: "continue",
@@ -53,6 +62,7 @@ const REPLY_CASES: Omit<BenchCase, "request">[] = [
   },
   {
     id: "next-action-needs-permission",
+    request: "Prepare the Node.js upgrade, but ask before changing the system installation.",
     group: "quiet",
     reply:
       "Next — upgrade the system Node.js. Confirm whether I may change the system installation; I will not start before confirmation.",
@@ -61,6 +71,7 @@ const REPLY_CASES: Omit<BenchCase, "request">[] = [
   },
   {
     id: "next-action-blocked",
+    request: "Transfer the sources to the test machine.",
     group: "quiet",
     reply: "Next — transfer the sources. But SSH is unavailable, so I cannot transfer them now.",
     expect: "quiet",
@@ -68,6 +79,7 @@ const REPLY_CASES: Omit<BenchCase, "request">[] = [
   },
   {
     id: "next-action-delayed",
+    request: "Transfer the sources next week.",
     group: "quiet",
     reply: "I will transfer the sources next week.",
     expect: "quiet",
@@ -75,6 +87,7 @@ const REPLY_CASES: Omit<BenchCase, "request">[] = [
   },
   {
     id: "user-next-action",
+    request: "Configure the test machine. I will transfer the sources myself.",
     group: "quiet",
     reply: "Everything is configured. Next you need to transfer the sources to the test machine.",
     expect: "quiet",
@@ -82,6 +95,7 @@ const REPLY_CASES: Omit<BenchCase, "request">[] = [
   },
   {
     id: "unfinished-but-refused",
+    request: "Transfer the sources.",
     group: "quiet",
     reply:
       "Earlier I wrote 'Next — transfer the sources', but did not transfer anything. I will not continue now.",
@@ -90,6 +104,7 @@ const REPLY_CASES: Omit<BenchCase, "request">[] = [
   },
   {
     id: "optional-next-action",
+    request: "Configure the test machine.",
     group: "quiet",
     reply: "Everything is configured. We could also transfer the sources if you want.",
     expect: "quiet",
@@ -97,6 +112,7 @@ const REPLY_CASES: Omit<BenchCase, "request">[] = [
   },
   {
     id: "unfinished-with-next-action",
+    request: "Find and fix duplicate delivery and verify the result.",
     group: "promise",
     reply:
       "I found the cause, but have not fixed the duplicate yet. I will fix repeated delivery now and check the result.",
@@ -105,6 +121,7 @@ const REPLY_CASES: Omit<BenchCase, "request">[] = [
   },
   {
     id: "retry-fixed-promises-resume-ru",
+    request: "Исправь настройку повторов и продолжи запуск. Дополнительные проверки не включай.",
     group: "target",
     reply:
       "Исправил настройку повторов: запрос при временном сбое API повторяется до 3 раз, сама задача повторно не запускается. Дополнительные проверки остаются отключены. Продолжаю запуск.",
@@ -113,6 +130,7 @@ const REPLY_CASES: Omit<BenchCase, "request">[] = [
   },
   {
     id: "retry-fixed-promises-resume-en",
+    request: "Fix the retry setting and continue the run. Keep additional checks disabled.",
     group: "target",
     reply:
       "Fixed the retry setting: a request after a temporary API failure is retried up to 3 times, but the task itself is not restarted. Additional checks remain disabled. Continuing the run.",
@@ -121,6 +139,7 @@ const REPLY_CASES: Omit<BenchCase, "request">[] = [
   },
   {
     id: "starting-now",
+    request: "Write the script.",
     group: "promise",
     reply: "I will write the script now.",
     expect: "continue",
@@ -128,6 +147,7 @@ const REPLY_CASES: Omit<BenchCase, "request">[] = [
   },
   {
     id: "next-check",
+    request: "Apply the change and run the tests.",
     group: "promise",
     reply: "The change is in. Next I will run the tests.",
     expect: "continue",
@@ -135,6 +155,7 @@ const REPLY_CASES: Omit<BenchCase, "request">[] = [
   },
   {
     id: "russian-next-check",
+    request: "Внеси исправление и запусти тесты.",
     group: "promise",
     reply: "Исправил. Сейчас проверю тестами.",
     expect: "continue",
@@ -142,6 +163,7 @@ const REPLY_CASES: Omit<BenchCase, "request">[] = [
   },
   {
     id: "confident-en",
+    request: "Fix the problem and run the tests.",
     group: "quiet",
     reply: "I am confident this fixes the problem. The tests pass.",
     expect: "quiet",
@@ -149,6 +171,7 @@ const REPLY_CASES: Omit<BenchCase, "request">[] = [
   },
   {
     id: "confident-ru",
+    request: "Исправь проблему и запусти тесты.",
     group: "quiet",
     reply: "Уверен, что это исправляет проблему. Тесты прошли.",
     expect: "quiet",
@@ -156,6 +179,7 @@ const REPLY_CASES: Omit<BenchCase, "request">[] = [
   },
   {
     id: "unfinished-no-promise",
+    request: "Update a.ts, b.ts, and c.ts.",
     group: "promise",
     reply: "Only a.ts and b.ts are updated. c.ts is unchanged.",
     expect: "continue",
@@ -163,6 +187,7 @@ const REPLY_CASES: Omit<BenchCase, "request">[] = [
   },
   {
     id: "later",
+    request: "Run the tests next week.",
     group: "quiet",
     reply: "I will run the tests next week.",
     expect: "quiet",
@@ -170,6 +195,7 @@ const REPLY_CASES: Omit<BenchCase, "request">[] = [
   },
   {
     id: "status-while-coding",
+    request: "Fix the current failures, then run the tests for the earlier implementation.",
     group: "quiet",
     reply:
       "I chose linewise insertion. The earlier implementation still needs tests; I will run them after fixing the current failures.",
@@ -178,6 +204,7 @@ const REPLY_CASES: Omit<BenchCase, "request">[] = [
   },
   {
     id: "waiting-build",
+    request: "Run the build and wait for its result.",
     group: "quiet",
     reply: "The build is already running. Its completion will automatically resume this session.",
     expect: "quiet",
@@ -185,6 +212,7 @@ const REPLY_CASES: Omit<BenchCase, "request">[] = [
   },
   {
     id: "reload-continue",
+    request: "Reload Pi and verify the change live.",
     group: "quiet",
     reply:
       "Reloading now; after the reload the session continues automatically with the live check.",
@@ -193,6 +221,7 @@ const REPLY_CASES: Omit<BenchCase, "request">[] = [
   },
   {
     id: "optional-extra",
+    request: "Fix the reported issue.",
     group: "quiet",
     reply: "Fixed. We could sweep the other documents later if you want.",
     expect: "quiet",
@@ -200,6 +229,7 @@ const REPLY_CASES: Omit<BenchCase, "request">[] = [
   },
   {
     id: "quoted-promise",
+    request: "Continue the existing run.",
     group: "promise",
     reply: "The earlier reply said 'Continuing the run', but it did not start anything.",
     expect: "continue",
@@ -207,6 +237,7 @@ const REPLY_CASES: Omit<BenchCase, "request">[] = [
   },
   {
     id: "negated-promise",
+    request: "Stop the run.",
     group: "quiet",
     reply: "I will not continue the run. You asked me to stop.",
     expect: "quiet",
@@ -214,6 +245,7 @@ const REPLY_CASES: Omit<BenchCase, "request">[] = [
   },
   {
     id: "pure-question-answered",
+    request: "What does TOCTOU mean?",
     group: "quiet",
     reply: "TOCTOU means time-of-check to time-of-use.",
     expect: "quiet",
@@ -328,10 +360,82 @@ const REQUEST_CASES: BenchCase[] = [
   },
 ];
 
-export const CASES: BenchCase[] = [
-  ...REPLY_CASES.map((testCase) => ({ ...testCase, request: "Complete the requested work." })),
-  ...REQUEST_CASES,
+const SCOPE_CASES: BenchCase[] = [
+  {
+    id: "scope-tests-report",
+    group: "scope",
+    request: "Run the tests and report the failures.",
+    reply: "Ran the tests. Two tests failed. No fixes have been applied.",
+    activity: '[tool] bash {"command":"npm test"}\n[tool ok] bash: tests completed, two failures',
+    expect: "quiet",
+    why: "the requested test run and report are complete; fixes were not requested",
+  },
+  {
+    id: "scope-tests-fix",
+    group: "scope",
+    request: "Run the tests and fix the failures.",
+    reply: "Ran the tests. Two tests failed. No fixes have been applied.",
+    activity: '[tool] bash {"command":"npm test"}\n[tool ok] bash: tests completed, two failures',
+    expect: "continue",
+    why: "the same test report leaves a requested fix incomplete",
+  },
+  {
+    id: "scope-cause-report",
+    group: "scope",
+    request: "Find the cause of duplicate delivery and report it.",
+    reply: "The duplicate is caused by a second delivery call. The fix has not been applied.",
+    activity: '[tool] read {"path":"delivery.ts"}\n[tool ok] read: two delivery calls',
+    expect: "quiet",
+    why: "finding and reporting the cause does not require applying a fix",
+  },
+  {
+    id: "scope-cause-fix",
+    group: "scope",
+    request: "Find the cause of duplicate delivery and fix it.",
+    reply: "The duplicate is caused by a second delivery call. The fix has not been applied.",
+    activity: '[tool] read {"path":"delivery.ts"}\n[tool ok] read: two delivery calls',
+    expect: "continue",
+    why: "the same cause report leaves the requested fix incomplete",
+  },
+  {
+    id: "scope-unrequested-next-action",
+    group: "scope",
+    request: "Check whether the configuration is valid and report the result.",
+    reply: "The configuration is valid. Next — install the dependencies.",
+    activity: '[tool] read {"path":"config.json"}\n[tool ok] read: valid configuration',
+    expect: "quiet",
+    why: "the assistant cannot add an installation to a completed check",
+  },
+  {
+    id: "scope-requested-next-action",
+    group: "scope",
+    request: "Check whether the configuration is valid, then install the dependencies.",
+    reply: "The configuration is valid. Next — install the dependencies.",
+    activity: '[tool] read {"path":"config.json"}\n[tool ok] read: valid configuration',
+    expect: "continue",
+    why: "the same announcement is a still-unfinished part of the request",
+  },
+  {
+    id: "scope-tests-report-ru",
+    group: "scope",
+    request: "Запусти тесты и сообщи о падениях.",
+    reply: "Тесты запущены. Два теста упали. Исправления не внесены.",
+    activity: '[tool] bash {"command":"npm test"}\n[tool ok] bash: tests completed, two failures',
+    expect: "quiet",
+    why: "the completed Russian test report does not authorize fixes",
+  },
+  {
+    id: "scope-tests-fix-ru",
+    group: "scope",
+    request: "Запусти тесты и исправь падения.",
+    reply: "Тесты запущены. Два теста упали. Исправления не внесены.",
+    activity: '[tool] bash {"command":"npm test"}\n[tool ok] bash: tests completed, two failures',
+    expect: "continue",
+    why: "the same Russian reply leaves the requested fixes incomplete",
+  },
 ];
+
+export const CASES: BenchCase[] = [...REPLY_CASES, ...REQUEST_CASES, ...SCOPE_CASES];
 
 if (CASES.length === 0) throw new Error("no bench cases");
 for (const value of CASES) {

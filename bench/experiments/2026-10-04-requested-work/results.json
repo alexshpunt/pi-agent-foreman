@@ -1,0 +1,2186 @@
+{
+  "case": "completed-ten-trial-experiment",
+  "sourceRevision": "6870b88",
+  "classifier": "opencode/jev-1.13-free",
+  "threshold": 0.5,
+  "blockingThreshold": 0.5,
+  "repeatsPerVariant": 5,
+  "inputs": {
+    "source": "Exact incident inputs retained in the active Pi session's false-positive-decision store entry. Private transcript not included here.",
+    "activityCharacters": 12000,
+    "activityBound": "Existing 12000-character head/tail context, including the final reply; not full history.",
+    "caseSummary": "The user requested ten parallel trials and an assessment. The assistant reported all ten trials completed with zero passes, saved the findings, and noted that no improvements had been applied."
+  },
+  "requestGate": {
+    "probability": 0.89,
+    "note": "The original experiment checked the unchanged request gate once. Its result is reused for the criteria comparison; no instruction writer or main agent runs were triggered."
+  },
+  "questions": {
+    "baseline": {
+      "plannedAction": {
+        "type": "bool",
+        "instructions": "Is there a next-action announcement anywhere in the reply?",
+        "criteria": {
+          "true": "The assistant names a concrete action or work item as its next step. The announcement may be a short sentence naming the next work, without saying 'I will'. It still counts when the rest of the reply reports completed work.",
+          "false": "There is no announcement of the assistant's own next action. Facts, status reports, optional suggestions, quoted past announcements, a refusal to act, or next steps assigned to the user do not count."
+        }
+      },
+      "blocker": {
+        "type": "bool",
+        "instructions": "Does the reply report an obstacle that prevents the assistant from carrying out its intended further action?",
+        "criteria": {
+          "true": "The assistant cannot proceed with its intended further action because a needed resource, access, information, dependency, or external result is missing or unavailable.",
+          "false": "No blocking obstacle is reported. Unfinished work or a discovered cause alone is not a blocker. Completed steps, and statements that an already resolved step needs no changes, do not block another intended action. A permission request alone belongs to the separate permission question."
+        }
+      },
+      "permission": {
+        "type": "bool",
+        "instructions": "Does the reply say that the assistant's further action requires a new user decision, confirmation, or permission before proceeding?",
+        "criteria": {
+          "true": "The assistant asks for or waits for user approval, a choice, or confirmation before its further action, including an offer conditional on the user's agreement.",
+          "false": "No new user decision or permission is requested or awaited. Referring to an action already chosen or approved by the user is not a new permission requirement."
+        }
+      },
+      "unfinished": {
+        "type": "bool",
+        "instructions": "Does the reply explicitly report that requested work or a concrete part of it has not yet been completed?",
+        "criteria": {
+          "true": "The assistant explicitly says the task is not done, a fix is not applied, or concrete work remains incomplete. A next-step announcement alone is not an explicit report of incompletion.",
+          "false": "No explicit report of incomplete work. Completed-work reports or a next-step announcement without an explicit incompletion statement do not qualify."
+        }
+      },
+      "deferred": {
+        "type": "bool",
+        "instructions": "Does the reply explicitly state that the assistant will do its announced action at a later time or only after a condition is met?",
+        "criteria": {
+          "true": "An explicit future time, waiting condition, or prerequisite postpones the announced action. The reply says when or under what condition the assistant will act instead of proceeding next.",
+          "false": "No explicit postponement of the announced action. Naming a next step is not postponement. Reporting that earlier work has not been done is not postponement. Do not infer a delay merely because the action is still to be performed."
+        }
+      },
+      "explicitStop": {
+        "type": "bool",
+        "instructions": "Does the assistant explicitly state that it will not perform or continue the further work?",
+        "criteria": {
+          "true": "The assistant expressly refuses, cancels, or rules out further action, or says it will respect an instruction to stop. This is a negative intent to act, not merely a report of incomplete work.",
+          "false": "No explicit refusal or cancellation of further work. Reporting that work is not yet done, that an earlier attempt stopped, or that a completed step needs no changes does not itself mean the assistant will not continue."
+        }
+      }
+    },
+    "scoped": {
+      "plannedAction": {
+        "type": "bool",
+        "instructions": "Is there a next-action announcement anywhere in the reply?",
+        "criteria": {
+          "true": "The assistant names a concrete action or work item as its next step. The announcement may be a short sentence naming the next work, without saying 'I will'. It still counts when the rest of the reply reports completed work.",
+          "false": "There is no announcement of the assistant's own next action. Facts, status reports, optional suggestions, quoted past announcements, a refusal to act, or next steps assigned to the user do not count."
+        }
+      },
+      "blocker": {
+        "type": "bool",
+        "instructions": "Does the reply report an obstacle that prevents the assistant from carrying out its intended further action?",
+        "criteria": {
+          "true": "The assistant cannot proceed with its intended further action because a needed resource, access, information, dependency, or external result is missing or unavailable.",
+          "false": "No blocking obstacle is reported. Unfinished work or a discovered cause alone is not a blocker. Completed steps, and statements that an already resolved step needs no changes, do not block another intended action. A permission request alone belongs to the separate permission question."
+        }
+      },
+      "permission": {
+        "type": "bool",
+        "instructions": "Does the reply say that the assistant's further action requires a new user decision, confirmation, or permission before proceeding?",
+        "criteria": {
+          "true": "The assistant asks for or waits for user approval, a choice, or confirmation before its further action, including an offer conditional on the user's agreement.",
+          "false": "No new user decision or permission is requested or awaited. Referring to an action already chosen or approved by the user is not a new permission requirement."
+        }
+      },
+      "unfinished": {
+        "type": "bool",
+        "instructions": "Does the reply explicitly report that requested work or a concrete part of it has not yet been completed?",
+        "criteria": {
+          "true": "The assistant explicitly reports that work explicitly requested by the user, or a concrete part of that requested work, has not been completed. Count an unapplied fix only if the user explicitly requested that fix. Do not infer that work is unfinished merely from a failed experiment or an unsuccessful result.",
+          "false": "No explicit report that the user's explicitly requested work remains incomplete. A completed investigation, experiment, or test run is completed work even when its result is failure. Improvements, fixes, optional next steps, or other further actions that the user did not explicitly request do not count as unfinished requested work. If the user request is not available, do not infer that an improvement or further action was requested."
+        }
+      },
+      "deferred": {
+        "type": "bool",
+        "instructions": "Does the reply explicitly state that the assistant will do its announced action at a later time or only after a condition is met?",
+        "criteria": {
+          "true": "An explicit future time, waiting condition, or prerequisite postpones the announced action. The reply says when or under what condition the assistant will act instead of proceeding next.",
+          "false": "No explicit postponement of the announced action. Naming a next step is not postponement. Reporting that earlier work has not been done is not postponement. Do not infer a delay merely because the action is still to be performed."
+        }
+      },
+      "explicitStop": {
+        "type": "bool",
+        "instructions": "Does the assistant explicitly state that it will not perform or continue the further work?",
+        "criteria": {
+          "true": "The assistant expressly refuses, cancels, or rules out further action, or says it will respect an instruction to stop. This is a negative intent to act, not merely a report of incomplete work.",
+          "false": "No explicit refusal or cancellation of further work. Reporting that work is not yet done, that an earlier attempt stopped, or that a completed step needs no changes does not itself mean the assistant will not continue."
+        }
+      }
+    }
+  },
+  "summaries": [
+    {
+      "id": "reply_only",
+      "stateFields": ["reply"],
+      "baseline": {
+        "continueCount": 5,
+        "signals": {
+          "plannedAction": {
+            "min": 0.09,
+            "max": 0.1,
+            "mean": 0.092
+          },
+          "blocker": {
+            "min": 0.11,
+            "max": 0.11,
+            "mean": 0.11
+          },
+          "permission": {
+            "min": 0.05,
+            "max": 0.06,
+            "mean": 0.052
+          },
+          "unfinished": {
+            "min": 0.83,
+            "max": 0.87,
+            "mean": 0.846
+          },
+          "deferred": {
+            "min": 0.05,
+            "max": 0.06,
+            "mean": 0.058
+          },
+          "explicitStop": {
+            "min": 0.06,
+            "max": 0.07,
+            "mean": 0.068
+          }
+        }
+      },
+      "scoped": {
+        "continueCount": 0,
+        "signals": {
+          "plannedAction": {
+            "min": 0.08,
+            "max": 0.09,
+            "mean": 0.088
+          },
+          "blocker": {
+            "min": 0.1,
+            "max": 0.11,
+            "mean": 0.106
+          },
+          "permission": {
+            "min": 0.05,
+            "max": 0.05,
+            "mean": 0.05
+          },
+          "unfinished": {
+            "min": 0.31,
+            "max": 0.36,
+            "mean": 0.328
+          },
+          "deferred": {
+            "min": 0.06,
+            "max": 0.06,
+            "mean": 0.06
+          },
+          "explicitStop": {
+            "min": 0.07,
+            "max": 0.07,
+            "mean": 0.07
+          }
+        }
+      }
+    },
+    {
+      "id": "reply_and_request",
+      "stateFields": ["reply", "request"],
+      "baseline": {
+        "continueCount": 5,
+        "signals": {
+          "plannedAction": {
+            "min": 0.12,
+            "max": 0.14,
+            "mean": 0.13
+          },
+          "blocker": {
+            "min": 0.08,
+            "max": 0.09,
+            "mean": 0.084
+          },
+          "permission": {
+            "min": 0.06,
+            "max": 0.06,
+            "mean": 0.06
+          },
+          "unfinished": {
+            "min": 0.81,
+            "max": 0.85,
+            "mean": 0.824
+          },
+          "deferred": {
+            "min": 0.06,
+            "max": 0.07,
+            "mean": 0.064
+          },
+          "explicitStop": {
+            "min": 0.09,
+            "max": 0.11,
+            "mean": 0.094
+          }
+        }
+      },
+      "scoped": {
+        "continueCount": 0,
+        "signals": {
+          "plannedAction": {
+            "min": 0.13,
+            "max": 0.14,
+            "mean": 0.132
+          },
+          "blocker": {
+            "min": 0.08,
+            "max": 0.09,
+            "mean": 0.082
+          },
+          "permission": {
+            "min": 0.06,
+            "max": 0.06,
+            "mean": 0.06
+          },
+          "unfinished": {
+            "min": 0.12,
+            "max": 0.13,
+            "mean": 0.124
+          },
+          "deferred": {
+            "min": 0.05,
+            "max": 0.07,
+            "mean": 0.064
+          },
+          "explicitStop": {
+            "min": 0.09,
+            "max": 0.1,
+            "mean": 0.094
+          }
+        }
+      }
+    },
+    {
+      "id": "reply_request_activity",
+      "stateFields": ["reply", "request", "activity"],
+      "baseline": {
+        "continueCount": 5,
+        "signals": {
+          "plannedAction": {
+            "min": 0.09,
+            "max": 0.11,
+            "mean": 0.098
+          },
+          "blocker": {
+            "min": 0.08,
+            "max": 0.09,
+            "mean": 0.082
+          },
+          "permission": {
+            "min": 0.11,
+            "max": 0.13,
+            "mean": 0.12
+          },
+          "unfinished": {
+            "min": 0.72,
+            "max": 0.75,
+            "mean": 0.732
+          },
+          "deferred": {
+            "min": 0.06,
+            "max": 0.07,
+            "mean": 0.064
+          },
+          "explicitStop": {
+            "min": 0.08,
+            "max": 0.1,
+            "mean": 0.09
+          }
+        }
+      },
+      "scoped": {
+        "continueCount": 0,
+        "signals": {
+          "plannedAction": {
+            "min": 0.09,
+            "max": 0.11,
+            "mean": 0.098
+          },
+          "blocker": {
+            "min": 0.08,
+            "max": 0.09,
+            "mean": 0.084
+          },
+          "permission": {
+            "min": 0.11,
+            "max": 0.12,
+            "mean": 0.116
+          },
+          "unfinished": {
+            "min": 0.1,
+            "max": 0.11,
+            "mean": 0.106
+          },
+          "deferred": {
+            "min": 0.06,
+            "max": 0.06,
+            "mean": 0.06
+          },
+          "explicitStop": {
+            "min": 0.09,
+            "max": 0.09,
+            "mean": 0.09
+          }
+        }
+      }
+    }
+  ],
+  "samples": {
+    "baseline": [
+      {
+        "id": "reply_only",
+        "attempt": 1,
+        "signals": {
+          "plannedAction": 0.09,
+          "blocker": 0.11,
+          "permission": 0.05,
+          "unfinished": 0.83,
+          "deferred": 0.05,
+          "explicitStop": 0.07
+        },
+        "continueWork": true,
+        "blocks": [],
+        "raw": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.09
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.11
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.05
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.83
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.05
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.07
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791135254945,
+          "usage": {
+            "input": 1518,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1628,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      },
+      {
+        "id": "reply_and_request",
+        "attempt": 1,
+        "signals": {
+          "plannedAction": 0.13,
+          "blocker": 0.08,
+          "permission": 0.06,
+          "unfinished": 0.83,
+          "deferred": 0.06,
+          "explicitStop": 0.09
+        },
+        "continueWork": true,
+        "blocks": [],
+        "raw": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.13
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.08
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.06
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.83
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.06
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.09
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791135254948,
+          "usage": {
+            "input": 1616,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1726,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      },
+      {
+        "id": "reply_request_activity",
+        "attempt": 1,
+        "signals": {
+          "plannedAction": 0.11,
+          "blocker": 0.08,
+          "permission": 0.12,
+          "unfinished": 0.75,
+          "deferred": 0.07,
+          "explicitStop": 0.09
+        },
+        "continueWork": true,
+        "blocks": [],
+        "raw": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.11
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.08
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.12
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.75
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.07
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.09
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791135254952,
+          "usage": {
+            "input": 5932,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 6042,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      },
+      {
+        "id": "reply_only",
+        "attempt": 2,
+        "signals": {
+          "plannedAction": 0.09,
+          "blocker": 0.11,
+          "permission": 0.05,
+          "unfinished": 0.84,
+          "deferred": 0.06,
+          "explicitStop": 0.06
+        },
+        "continueWork": true,
+        "blocks": [],
+        "raw": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.09
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.11
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.05
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.84
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.06
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.06
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791135254956,
+          "usage": {
+            "input": 1518,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1628,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      },
+      {
+        "id": "reply_and_request",
+        "attempt": 2,
+        "signals": {
+          "plannedAction": 0.12,
+          "blocker": 0.09,
+          "permission": 0.06,
+          "unfinished": 0.82,
+          "deferred": 0.06,
+          "explicitStop": 0.09
+        },
+        "continueWork": true,
+        "blocks": [],
+        "raw": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.12
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.09
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.06
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.82
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.06
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.09
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791135255474,
+          "usage": {
+            "input": 1616,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1726,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      },
+      {
+        "id": "reply_request_activity",
+        "attempt": 2,
+        "signals": {
+          "plannedAction": 0.1,
+          "blocker": 0.08,
+          "permission": 0.12,
+          "unfinished": 0.72,
+          "deferred": 0.06,
+          "explicitStop": 0.08
+        },
+        "continueWork": true,
+        "blocks": [],
+        "raw": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.1
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.08
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.12
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.72
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.06
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.08
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791135256066,
+          "usage": {
+            "input": 5932,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 6042,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      },
+      {
+        "id": "reply_only",
+        "attempt": 3,
+        "signals": {
+          "plannedAction": 0.09,
+          "blocker": 0.11,
+          "permission": 0.05,
+          "unfinished": 0.85,
+          "deferred": 0.06,
+          "explicitStop": 0.07
+        },
+        "continueWork": true,
+        "blocks": [],
+        "raw": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.09
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.11
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.05
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.85
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.06
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.07
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791135256069,
+          "usage": {
+            "input": 1518,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1628,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      },
+      {
+        "id": "reply_and_request",
+        "attempt": 3,
+        "signals": {
+          "plannedAction": 0.13,
+          "blocker": 0.08,
+          "permission": 0.06,
+          "unfinished": 0.85,
+          "deferred": 0.07,
+          "explicitStop": 0.11
+        },
+        "continueWork": true,
+        "blocks": [],
+        "raw": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.13
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.08
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.06
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.85
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.07
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.11
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791135256336,
+          "usage": {
+            "input": 1616,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1726,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      },
+      {
+        "id": "reply_request_activity",
+        "attempt": 3,
+        "signals": {
+          "plannedAction": 0.1,
+          "blocker": 0.08,
+          "permission": 0.13,
+          "unfinished": 0.72,
+          "deferred": 0.07,
+          "explicitStop": 0.1
+        },
+        "continueWork": true,
+        "blocks": [],
+        "raw": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.1
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.08
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.13
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.72
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.07
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.1
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791135256542,
+          "usage": {
+            "input": 5932,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 6042,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      },
+      {
+        "id": "reply_only",
+        "attempt": 4,
+        "signals": {
+          "plannedAction": 0.1,
+          "blocker": 0.11,
+          "permission": 0.06,
+          "unfinished": 0.87,
+          "deferred": 0.06,
+          "explicitStop": 0.07
+        },
+        "continueWork": true,
+        "blocks": [],
+        "raw": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.1
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.11
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.06
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.87
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.06
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.07
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791135256544,
+          "usage": {
+            "input": 1518,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1628,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      },
+      {
+        "id": "reply_and_request",
+        "attempt": 4,
+        "signals": {
+          "plannedAction": 0.14,
+          "blocker": 0.08,
+          "permission": 0.06,
+          "unfinished": 0.81,
+          "deferred": 0.07,
+          "explicitStop": 0.09
+        },
+        "continueWork": true,
+        "blocks": [],
+        "raw": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.14
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.08
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.06
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.81
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.07
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.09
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791135256678,
+          "usage": {
+            "input": 1616,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1726,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      },
+      {
+        "id": "reply_request_activity",
+        "attempt": 4,
+        "signals": {
+          "plannedAction": 0.09,
+          "blocker": 0.08,
+          "permission": 0.11,
+          "unfinished": 0.75,
+          "deferred": 0.06,
+          "explicitStop": 0.09
+        },
+        "continueWork": true,
+        "blocks": [],
+        "raw": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.09
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.08
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.11
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.75
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.06
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.09
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791135256801,
+          "usage": {
+            "input": 5932,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 6042,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      },
+      {
+        "id": "reply_only",
+        "attempt": 5,
+        "signals": {
+          "plannedAction": 0.09,
+          "blocker": 0.11,
+          "permission": 0.05,
+          "unfinished": 0.84,
+          "deferred": 0.06,
+          "explicitStop": 0.07
+        },
+        "continueWork": true,
+        "blocks": [],
+        "raw": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.09
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.11
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.05
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.84
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.06
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.07
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791135257063,
+          "usage": {
+            "input": 1518,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1628,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      },
+      {
+        "id": "reply_and_request",
+        "attempt": 5,
+        "signals": {
+          "plannedAction": 0.13,
+          "blocker": 0.09,
+          "permission": 0.06,
+          "unfinished": 0.81,
+          "deferred": 0.06,
+          "explicitStop": 0.09
+        },
+        "continueWork": true,
+        "blocks": [],
+        "raw": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.13
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.09
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.06
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.81
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.06
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.09
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791135257099,
+          "usage": {
+            "input": 1616,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1726,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      },
+      {
+        "id": "reply_request_activity",
+        "attempt": 5,
+        "signals": {
+          "plannedAction": 0.09,
+          "blocker": 0.09,
+          "permission": 0.12,
+          "unfinished": 0.72,
+          "deferred": 0.06,
+          "explicitStop": 0.09
+        },
+        "continueWork": true,
+        "blocks": [],
+        "raw": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.09
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.09
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.12
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.72
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.06
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.09
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791135257167,
+          "usage": {
+            "input": 5932,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 6042,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      }
+    ],
+    "scoped": [
+      {
+        "id": "reply_only",
+        "attempt": 1,
+        "signals": {
+          "plannedAction": 0.09,
+          "blocker": 0.11,
+          "permission": 0.05,
+          "unfinished": 0.33,
+          "deferred": 0.06,
+          "explicitStop": 0.07
+        },
+        "continueWork": false,
+        "blocks": [],
+        "raw": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.09
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.11
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.05
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.33
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.06
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.07
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791135345083,
+          "usage": {
+            "input": 1592,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1702,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      },
+      {
+        "id": "reply_and_request",
+        "attempt": 1,
+        "signals": {
+          "plannedAction": 0.13,
+          "blocker": 0.09,
+          "permission": 0.06,
+          "unfinished": 0.13,
+          "deferred": 0.07,
+          "explicitStop": 0.1
+        },
+        "continueWork": false,
+        "blocks": [],
+        "raw": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.13
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.09
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.06
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.13
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.07
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.1
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791135345088,
+          "usage": {
+            "input": 1690,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1800,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      },
+      {
+        "id": "reply_request_activity",
+        "attempt": 1,
+        "signals": {
+          "plannedAction": 0.09,
+          "blocker": 0.09,
+          "permission": 0.11,
+          "unfinished": 0.11,
+          "deferred": 0.06,
+          "explicitStop": 0.09
+        },
+        "continueWork": false,
+        "blocks": [],
+        "raw": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.09
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.09
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.11
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.11
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.06
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.09
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791135345092,
+          "usage": {
+            "input": 6006,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 6116,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      },
+      {
+        "id": "reply_only",
+        "attempt": 2,
+        "signals": {
+          "plannedAction": 0.09,
+          "blocker": 0.1,
+          "permission": 0.05,
+          "unfinished": 0.32,
+          "deferred": 0.06,
+          "explicitStop": 0.07
+        },
+        "continueWork": false,
+        "blocks": [],
+        "raw": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.09
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.1
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.05
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.32
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.06
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.07
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791135345096,
+          "usage": {
+            "input": 1592,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1702,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      },
+      {
+        "id": "reply_and_request",
+        "attempt": 2,
+        "signals": {
+          "plannedAction": 0.13,
+          "blocker": 0.08,
+          "permission": 0.06,
+          "unfinished": 0.12,
+          "deferred": 0.07,
+          "explicitStop": 0.1
+        },
+        "continueWork": false,
+        "blocks": [],
+        "raw": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.13
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.08
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.06
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.12
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.07
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.1
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791135346266,
+          "usage": {
+            "input": 1690,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1800,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      },
+      {
+        "id": "reply_request_activity",
+        "attempt": 2,
+        "signals": {
+          "plannedAction": 0.09,
+          "blocker": 0.08,
+          "permission": 0.12,
+          "unfinished": 0.1,
+          "deferred": 0.06,
+          "explicitStop": 0.09
+        },
+        "continueWork": false,
+        "blocks": [],
+        "raw": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.09
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.08
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.12
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.1
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.06
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.09
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791135346270,
+          "usage": {
+            "input": 6006,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 6116,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      },
+      {
+        "id": "reply_only",
+        "attempt": 3,
+        "signals": {
+          "plannedAction": 0.09,
+          "blocker": 0.1,
+          "permission": 0.05,
+          "unfinished": 0.32,
+          "deferred": 0.06,
+          "explicitStop": 0.07
+        },
+        "continueWork": false,
+        "blocks": [],
+        "raw": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.09
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.1
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.05
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.32
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.06
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.07
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791135346278,
+          "usage": {
+            "input": 1592,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1702,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      },
+      {
+        "id": "reply_and_request",
+        "attempt": 3,
+        "signals": {
+          "plannedAction": 0.13,
+          "blocker": 0.08,
+          "permission": 0.06,
+          "unfinished": 0.12,
+          "deferred": 0.06,
+          "explicitStop": 0.09
+        },
+        "continueWork": false,
+        "blocks": [],
+        "raw": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.13
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.08
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.06
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.12
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.06
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.09
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791135346400,
+          "usage": {
+            "input": 1690,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1800,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      },
+      {
+        "id": "reply_request_activity",
+        "attempt": 3,
+        "signals": {
+          "plannedAction": 0.11,
+          "blocker": 0.08,
+          "permission": 0.12,
+          "unfinished": 0.11,
+          "deferred": 0.06,
+          "explicitStop": 0.09
+        },
+        "continueWork": false,
+        "blocks": [],
+        "raw": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.11
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.08
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.12
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.11
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.06
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.09
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791135346859,
+          "usage": {
+            "input": 6006,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 6116,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      },
+      {
+        "id": "reply_only",
+        "attempt": 4,
+        "signals": {
+          "plannedAction": 0.09,
+          "blocker": 0.11,
+          "permission": 0.05,
+          "unfinished": 0.31,
+          "deferred": 0.06,
+          "explicitStop": 0.07
+        },
+        "continueWork": false,
+        "blocks": [],
+        "raw": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.09
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.11
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.05
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.31
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.06
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.07
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791135346870,
+          "usage": {
+            "input": 1592,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1702,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      },
+      {
+        "id": "reply_and_request",
+        "attempt": 4,
+        "signals": {
+          "plannedAction": 0.14,
+          "blocker": 0.08,
+          "permission": 0.06,
+          "unfinished": 0.12,
+          "deferred": 0.07,
+          "explicitStop": 0.09
+        },
+        "continueWork": false,
+        "blocks": [],
+        "raw": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.14
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.08
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.06
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.12
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.07
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.09
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791135346960,
+          "usage": {
+            "input": 1690,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1800,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      },
+      {
+        "id": "reply_request_activity",
+        "attempt": 4,
+        "signals": {
+          "plannedAction": 0.1,
+          "blocker": 0.08,
+          "permission": 0.12,
+          "unfinished": 0.1,
+          "deferred": 0.06,
+          "explicitStop": 0.09
+        },
+        "continueWork": false,
+        "blocks": [],
+        "raw": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.1
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.08
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.12
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.1
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.06
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.09
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791135347068,
+          "usage": {
+            "input": 6006,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 6116,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      },
+      {
+        "id": "reply_only",
+        "attempt": 5,
+        "signals": {
+          "plannedAction": 0.08,
+          "blocker": 0.11,
+          "permission": 0.05,
+          "unfinished": 0.36,
+          "deferred": 0.06,
+          "explicitStop": 0.07
+        },
+        "continueWork": false,
+        "blocks": [],
+        "raw": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.08
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.11
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.05
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.36
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.06
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.07
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791135347434,
+          "usage": {
+            "input": 1592,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1702,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      },
+      {
+        "id": "reply_and_request",
+        "attempt": 5,
+        "signals": {
+          "plannedAction": 0.13,
+          "blocker": 0.08,
+          "permission": 0.06,
+          "unfinished": 0.13,
+          "deferred": 0.05,
+          "explicitStop": 0.09
+        },
+        "continueWork": false,
+        "blocks": [],
+        "raw": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.13
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.08
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.06
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.13
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.05
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.09
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791135347466,
+          "usage": {
+            "input": 1690,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 1800,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      },
+      {
+        "id": "reply_request_activity",
+        "attempt": 5,
+        "signals": {
+          "plannedAction": 0.1,
+          "blocker": 0.09,
+          "permission": 0.11,
+          "unfinished": 0.11,
+          "deferred": 0.06,
+          "explicitStop": 0.09
+        },
+        "continueWork": false,
+        "blocks": [],
+        "raw": {
+          "api": "typesafe-system-one",
+          "provider": "opencode",
+          "model": "jev-1.13-free",
+          "answers": {
+            "plannedAction": {
+              "type": "bool",
+              "probability": 0.1
+            },
+            "blocker": {
+              "type": "bool",
+              "probability": 0.09
+            },
+            "permission": {
+              "type": "bool",
+              "probability": 0.11
+            },
+            "unfinished": {
+              "type": "bool",
+              "probability": 0.11
+            },
+            "deferred": {
+              "type": "bool",
+              "probability": 0.06
+            },
+            "explicitStop": {
+              "type": "bool",
+              "probability": 0.09
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1791135347769,
+          "usage": {
+            "input": 6006,
+            "output": 110,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 6116,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          }
+        }
+      }
+    ]
+  },
+  "limitations": [
+    "One incident, five repeats per variant. No genuine unfinished-work controls were evaluated.",
+    "Baseline samples are the earlier results, not a new simultaneous control batch.",
+    "Only unfinished.criteria.true and unfinished.criteria.false changed. These texts include several clarifications; this experiment does not separate their individual effects.",
+    "Classifier-only experiment. No runtime, continuation-writer, or TUI behavior was changed or verified."
+  ]
+}

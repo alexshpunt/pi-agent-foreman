@@ -3,7 +3,7 @@ import { createClassifierRunner, decideStop } from "../src/classifier.ts";
 import { signals } from "./signals.ts";
 
 describe("final reply review", () => {
-  it("judges only the final reply and gives the writer context after a positive decision", async () => {
+  it("shares the current request and activity with the judge and writer", async () => {
     const reply = "Restored retries. Continuing the run.";
     const activity = `[tool ok] replace: restored retries\n[assistant] ${reply}`;
     const judge = vi.fn(async () => signals({ plannedAction: 0.94 }));
@@ -16,7 +16,10 @@ describe("final reply review", () => {
     await expect(
       runner.run("Restore retries and continue the run.", activity, reply),
     ).resolves.toBe("Start the run now.");
-    expect(judge).toHaveBeenCalledWith({ reply }, undefined);
+    expect(judge).toHaveBeenCalledWith(
+      { request: "Restore retries and continue the run.", activity, reply },
+      undefined,
+    );
     expect(instructionRunner.run).toHaveBeenCalledWith(
       "Restore retries and continue the run.",
       activity,
