@@ -171,13 +171,19 @@ export function settledExchange(ctx: unknown): SettledExchange | undefined {
   for (let index = entries.length - 1; index >= 0; index--) {
     const entry = entries[index] as {
       type?: string;
-      message?: { role?: string; content?: unknown; stopReason?: string };
+      message?: { role?: string; content?: unknown; stopReason?: string; errorMessage?: string };
     };
     if (entry.type !== "message") continue;
-    if (entry.message?.role !== "assistant" || entry.message.stopReason === "aborted") {
+    const message = entry.message;
+    // Pi can record cancellation during request setup as an error.
+    if (
+      message?.role !== "assistant" ||
+      message.stopReason === "aborted" ||
+      (message.stopReason === "error" && message.errorMessage === "This operation was aborted")
+    ) {
       return undefined;
     }
-    reply = messageText(entry.message.content) ?? "";
+    reply = messageText(message.content) ?? "";
     finalMessageIndex = index;
     break;
   }

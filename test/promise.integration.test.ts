@@ -26,6 +26,43 @@ async function workspace() {
 
 const extensions = [resolve("src/index.ts"), resolve("test/fixtures/promise-judge.ts")];
 
+it.each([false, true])(
+  "does not resume a cancellation recorded as an error (partial reply: %s)",
+  async (partial) => {
+    const cwd = await workspace();
+    const result = await new PiIntegrationTest({
+      testName: partial ? "cancelled-partial-error" : "cancelled-empty-error",
+      artifactsDir: testArtifactsDir(import.meta.filename),
+      cwd,
+      extensions,
+      rawMode: false,
+      tools: [],
+      isolateUserResources: true,
+      environment: { FOREMAN_TEST_REPLY_ERROR: "This operation was aborted" },
+      conversation: [assistantMessage(partial ? [text("Continuing the run.")] : [])],
+    }).run("Finish the existing run.");
+    expect(result.providerRequests).toHaveLength(1);
+    expect(result.messages).toContainEqual(
+      expect.objectContaining({
+        role: "assistant",
+        stopReason: "error",
+        errorMessage: "This operation was aborted",
+      }),
+    );
+    expect(
+      result.messages.some(
+        (message) => (message as { customType?: string }).customType === "agent-foreman-continued",
+      ),
+    ).toBe(false);
+    expect(result.tuiRenderedOutput).toContain("Error: This operation was aborted");
+    expect(result.tuiRenderedOutput).not.toContain("Foreman sent the agent back to work");
+    for (const file of ["request-inputs.jsonl", "judge-inputs.jsonl", "writer-inputs.jsonl"]) {
+      await expect(readFile(resolve(cwd, file), "utf8")).rejects.toMatchObject({ code: "ENOENT" });
+    }
+  },
+  60_000,
+);
+
 it("sends a dot after consecutive empty replies even after a question", async () => {
   const cwd = await workspace();
   const result = await new PiIntegrationTest({

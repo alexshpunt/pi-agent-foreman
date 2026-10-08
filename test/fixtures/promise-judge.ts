@@ -113,6 +113,12 @@ export default function promiseJudge(pi: ExtensionAPI) {
     }
     return originalFetch(input, init);
   };
+  pi.on("message_end", (event) => {
+    const errorMessage = process.env.FOREMAN_TEST_REPLY_ERROR;
+    if (errorMessage && event.message.role === "assistant") {
+      return { message: { ...event.message, stopReason: "error", errorMessage } };
+    }
+  });
   pi.on("session_start", () => {
     const path = join(getAgentDir(), "settings.json");
     const root = JSON.parse(readFileSync(path, "utf8"));
