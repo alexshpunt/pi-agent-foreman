@@ -19,6 +19,7 @@ import agentForeman from "../src/index.ts";
 function harness(
   content: unknown = [{ type: "text", text: "I will do it now" }],
   stopReason = "stop",
+  errorMessage?: string,
 ) {
   const handlers = new Map<string, (event: unknown, ctx: ExtensionContext) => unknown>();
   const sendMessage = vi.fn();
@@ -32,7 +33,7 @@ function harness(
         { type: "message", message: { role: "user", content: "Do the work" } },
         {
           type: "message",
-          message: { role: "assistant", content, stopReason },
+          message: { role: "assistant", content, stopReason, errorMessage },
         },
       ],
     },
@@ -83,6 +84,24 @@ it.each(["agent_start", "session_shutdown"])(
     expect(app.sendMessage).not.toHaveBeenCalled();
   },
 );
+
+it.each([{ content: [] }, { content: [{ type: "text", text: "Continuing the run." }] }])(
+  "does not judge or continue a cancellation recorded as an error: $content",
+  async ({ content }) => {
+    const app = harness(content, "error", "This operation was aborted");
+    app.emit("agent_settled");
+    await vi.runAllTimersAsync();
+    expect(mocks.run).not.toHaveBeenCalled();
+    expect(app.sendMessage).not.toHaveBeenCalled();
+  },
+);
+
+it("still continues an empty provider error", async () => {
+  const app = harness([], "error", "Service unavailable");
+  app.emit("agent_settled");
+  await vi.runAllTimersAsync();
+  expect(app.sendMessage).toHaveBeenCalledOnce();
+});
 
 it("does not continue an empty aborted reply", async () => {
   const app = harness([], "aborted");

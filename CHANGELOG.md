@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.11 — 2026-10-08
+
+### Fixed
+
+- Stay quiet after a cancellation that Pi records as `Error: This operation was aborted`, even if the reply is empty or partial.
+- Keep retrying other empty replies, including model errors.
+
 ## 0.5.10 — 2026-10-08
 
 ### Fixed
