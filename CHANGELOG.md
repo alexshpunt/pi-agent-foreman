@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.10 — 2026-10-08
+
+### Fixed
+
+- Send `.` after an empty final reply, including model errors, without calling the classifier or instruction writer.
+- Retry empty replies after questions too, while respecting user aborts, closed sessions, and disabled mode.
+- Render continuation messages as compact Foreman notices instead of raw custom messages.
+
 ## 0.5.9 — 2026-10-05
 
 ### Fixed
