@@ -26,6 +26,40 @@ async function workspace() {
 
 const extensions = [resolve("src/index.ts"), resolve("test/fixtures/promise-judge.ts")];
 
+it("sends a dot after consecutive empty replies even after a question", async () => {
+  const cwd = await workspace();
+  const result = await new PiIntegrationTest({
+    testName: "empty-reply-continuation",
+    artifactsDir: testArtifactsDir(import.meta.filename),
+    cwd,
+    extensions,
+    rawMode: false,
+    tools: [],
+    isolateUserResources: true,
+    environment: { FOREMAN_TEST_REQUEST_PROBABILITY: "0.05" },
+    conversation: [
+      assistantMessage([]),
+      assistantMessage([text(" \n\t")]),
+      assistantMessage([text("The run is complete.")]),
+    ],
+  }).run("What is left?");
+  expect(result.providerRequests).toHaveLength(3);
+  for (const request of result.providerRequests.slice(1)) {
+    expect(getProviderRequestLastMessageText(request)).toBe(".");
+  }
+  const savedRun = await PiRun.open(result.artifacts.directory);
+  if (!savedRun.session) throw new Error("Pi did not persist the session");
+  const entries = savedRun.session
+    .trim()
+    .split("\n")
+    .map((line) => JSON.parse(line));
+  expect(entries.filter((entry) => entry.customType === "agent-foreman-continued")).toHaveLength(2);
+  expect(result.tuiRenderedOutput).toContain("Foreman sent the agent back to work");
+  for (const file of ["judge-inputs.jsonl", "writer-inputs.jsonl"]) {
+    await expect(readFile(resolve(cwd, file), "utf8")).rejects.toMatchObject({ code: "ENOENT" });
+  }
+}, 60_000);
+
 it.each([
   { request: "Find the cause.", continues: false },
   { request: "Find and fix the cause.", continues: true },

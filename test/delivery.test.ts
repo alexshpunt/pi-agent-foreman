@@ -1,7 +1,7 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ run: vi.fn() }));
+const mocks = vi.hoisted(() => ({ run: vi.fn(), enabled: true }));
 vi.mock("../src/classifier.ts", async (original) => ({
   ...(await original<typeof import("../src/classifier.ts")>()),
   createClassifierJudge: vi.fn(),
@@ -10,13 +10,16 @@ vi.mock("../src/classifier.ts", async (original) => ({
 vi.mock("@earendil-works/pi-coding-agent", async (original) => ({
   ...(await original<typeof import("@earendil-works/pi-coding-agent")>()),
   SettingsManager: {
-    create: () => ({ getGlobalSettings: () => ({ agentForeman: { enabled: true } }) }),
+    create: () => ({ getGlobalSettings: () => ({ agentForeman: { enabled: mocks.enabled } }) }),
   },
 }));
 
 import agentForeman from "../src/index.ts";
 
-function harness() {
+function harness(
+  content: unknown = [{ type: "text", text: "I will do it now" }],
+  stopReason = "stop",
+) {
   const handlers = new Map<string, (event: unknown, ctx: ExtensionContext) => unknown>();
   const sendMessage = vi.fn();
   let idle = true;
@@ -29,7 +32,7 @@ function harness() {
         { type: "message", message: { role: "user", content: "Do the work" } },
         {
           type: "message",
-          message: { role: "assistant", content: [{ type: "text", text: "I will do it now" }] },
+          message: { role: "assistant", content, stopReason },
         },
       ],
     },
@@ -38,6 +41,7 @@ function harness() {
     on: (name: string, handler: (event: unknown, ctx: ExtensionContext) => unknown) =>
       handlers.set(name, handler),
     registerEntryRenderer: vi.fn(),
+    registerMessageRenderer: vi.fn(),
     registerCommand: vi.fn(),
     sendMessage,
     appendEntry: vi.fn(),
@@ -51,7 +55,61 @@ function harness() {
   };
 }
 
-beforeEach(() => vi.useFakeTimers());
+it.each([
+  { content: [], stopReason: "stop" },
+  { content: [{ type: "text", text: " \n\t" }], stopReason: "stop" },
+  { content: [{ type: "thinking", thinking: "private" }], stopReason: "stop" },
+  { content: [], stopReason: "error" },
+])("continues an empty $stopReason reply without the judge", async ({ content, stopReason }) => {
+  const app = harness(content, stopReason);
+  app.emit("agent_settled");
+  app.emit("agent_settled");
+  await vi.runAllTimersAsync();
+  expect(mocks.run).not.toHaveBeenCalled();
+  expect(app.sendMessage).toHaveBeenCalledOnce();
+  expect(app.sendMessage).toHaveBeenCalledWith(
+    expect.objectContaining({ content: ".", display: true }),
+    { triggerTurn: true },
+  );
+});
+
+it.each(["agent_start", "session_shutdown"])(
+  "discards an empty reply continuation after %s",
+  async (event) => {
+    const app = harness([]);
+    app.emit("agent_settled");
+    app.emit(event);
+    await vi.runAllTimersAsync();
+    expect(app.sendMessage).not.toHaveBeenCalled();
+  },
+);
+
+it("does not continue an empty aborted reply", async () => {
+  const app = harness([], "aborted");
+  app.emit("agent_settled");
+  await vi.runAllTimersAsync();
+  expect(app.sendMessage).not.toHaveBeenCalled();
+});
+
+it("does not continue an empty reply while disabled", async () => {
+  mocks.enabled = false;
+  const app = harness([]);
+  app.emit("agent_settled");
+  await vi.runAllTimersAsync();
+  expect(app.sendMessage).not.toHaveBeenCalled();
+});
+
+it("does not continue an empty reply when another run is busy", async () => {
+  const app = harness([]);
+  app.emit("agent_settled");
+  app.busy();
+  await vi.runAllTimersAsync();
+  expect(app.sendMessage).not.toHaveBeenCalled();
+});
+beforeEach(() => {
+  vi.useFakeTimers();
+  mocks.enabled = true;
+});
 afterEach(() => {
   vi.clearAllMocks();
   vi.useRealTimers();

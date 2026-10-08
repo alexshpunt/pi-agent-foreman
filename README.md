@@ -15,7 +15,7 @@ Your agent says "Continuing the run" and ends its turn.
 
 **Foreman sends it back to do the work it left unfinished.**
 
-Pi Agent Foreman first checks the **latest user request** for an explicit command to do work. A question alone does not activate Foreman, even if the agent promises to act or reports unfinished work. After a direct command, Foreman checks the **final assistant reply** against that request and bounded work activity. Only an announced next action or explicitly unfinished work within the user's request can trigger continuation. The default classifier is `typesafe/jev-latest`; you can choose another available classifier in Pi. Six reply questions share one classifier request. Blocking signals prevent intervention. Otherwise, a separate Pi agent writes a specific instruction within the user's requested scope.
+For replies with visible text, Pi Agent Foreman first checks the **latest user request** for an explicit command to do work. A question alone does not activate Foreman, even if the agent promises to act or reports unfinished work. After a direct command, Foreman checks the **final assistant reply** against that request and bounded work activity. Only an announced next action or explicitly unfinished work within the user's request can trigger continuation. The default classifier is `typesafe/jev-latest`; you can choose another available classifier in Pi. Six reply questions share one classifier request. Blocking signals prevent intervention. Otherwise, a separate Pi agent writes a specific instruction within the user's requested scope.
 
 ## Install
 
@@ -26,10 +26,16 @@ pi install npm:pi-agent-foreman
 Requires Pi 1.0.0 or newer. Foreman uses the Node.js runtime bundled with your Pi
 installation.
 
+If the final reply has no visible text, Foreman sends `.` to resume the agent directly,
+without a classifier or instruction writer. This also applies after a question or a model
+error. Whitespace-only and thinking-only replies count as empty. Disabled mode, a user
+abort, and a closed session never trigger this retry. Repeated empty replies trigger
+repeated retries; persistent errors can keep retrying until you stop the run.
+
 ## Cost and privacy
 
 When enabled, Foreman sends the latest user request to the selected classifier after each settled
-run. If it finds an explicit work command, a second classifier call receives the latest request,
+run with a non-empty reply. If it finds an explicit work command, a second classifier call receives the latest request,
 the final assistant reply, and bounded activity after that request. Questions and unclear requests
 stop after the first call.
 
@@ -147,7 +153,7 @@ When Foreman finds further work without a blocking signal:
 
 The instruction itself is delivered as a normal user message. The main agent does not receive a foreman wrapper or hidden transcript.
 
-Pressing Esc to abort a run never summons Foreman. A status-only request does not activate Foreman, even if its answer reports unfinished work. After a direct work command, a completed answer without an announced next action does not trigger continuation.
+Pressing Esc to abort a run never summons Foreman. A non-empty answer to a status-only request does not activate Foreman, even if it reports unfinished work. After a direct work command, a completed answer without an announced next action does not trigger continuation.
 
 ## Development
 
