@@ -95,7 +95,7 @@ interface SessionReader {
 export interface SettledExchange {
   user: string;
   activity: string;
-  /** Exact final assistant text, kept separate from bounded context. */
+  /** Final assistant text, empty when it has no visible text, separate from bounded context. */
   reply: string;
 }
 
@@ -163,7 +163,7 @@ function activityLines(message: {
   return lines;
 }
 
-/** Return the latest user request and the agent activity that followed it. */
+/** Return the latest request and activity, including empty final replies but not user aborts. */
 export function settledExchange(ctx: unknown): SettledExchange | undefined {
   const entries = (ctx as SessionReader)?.sessionManager?.getBranch?.() ?? [];
   let finalMessageIndex = -1;
@@ -178,7 +178,6 @@ export function settledExchange(ctx: unknown): SettledExchange | undefined {
       return undefined;
     }
     reply = messageText(entry.message.content) ?? "";
-    if (!reply) return undefined;
     finalMessageIndex = index;
     break;
   }
@@ -208,7 +207,7 @@ export function settledExchange(ctx: unknown): SettledExchange | undefined {
         return value.type === "message" && value.message ? activityLines(value.message) : [];
       })
       .join("\n");
-    return activity ? { user, activity: shorten(activity, ACTIVITY_LIMIT), reply } : undefined;
+    return { user, activity: shorten(activity, ACTIVITY_LIMIT), reply };
   }
   return undefined;
 }
@@ -272,7 +271,7 @@ export default function agentForeman(pi: ExtensionAPI) {
   let keyWarningShown = false;
   let activeRun: AbortController | undefined;
 
-  pi.registerEntryRenderer(
+  pi.registerMessageRenderer(
     CONTINUED_ENTRY,
     (_entry, _options, theme) =>
       new Text(theme.fg("accent", "⛑ Foreman sent the agent back to work"), 1, 0),
@@ -303,34 +302,37 @@ export default function agentForeman(pi: ExtensionAPI) {
     activeRun = controller;
     let details: DecisionDetails | undefined;
     try {
-      const runner = createRunner(
-        ctx,
-        settings,
-        (error) => {
-          if (keyWarningShown || !ctx.hasUI) return;
-          ctx.ui.notify(
-            `Classifier unavailable; Foreman stayed quiet: ${error.message}`,
-            "warning",
-          );
-          keyWarningShown = true;
-        },
-        (decision, instruction) => {
-          if (stopped || controller.signal.aborted) return;
-          details = {
-            ...exchange,
-            decision,
-            classifier: settings.classifier ?? DEFAULT_CLASSIFIER,
-            threshold: settings.threshold ?? DEFAULT_THRESHOLD,
-            ...(instruction ? { instruction } : {}),
-          };
-        },
-      );
-      const instruction = await runner.run(
-        exchange.user,
-        exchange.activity,
-        exchange.reply,
-        controller.signal,
-      );
+      let instruction: string | undefined = ".";
+      if (exchange.reply) {
+        const runner = createRunner(
+          ctx,
+          settings,
+          (error) => {
+            if (keyWarningShown || !ctx.hasUI) return;
+            ctx.ui.notify(
+              `Classifier unavailable; Foreman stayed quiet: ${error.message}`,
+              "warning",
+            );
+            keyWarningShown = true;
+          },
+          (decision, instruction) => {
+            if (stopped || controller.signal.aborted) return;
+            details = {
+              ...exchange,
+              decision,
+              classifier: settings.classifier ?? DEFAULT_CLASSIFIER,
+              threshold: settings.threshold ?? DEFAULT_THRESHOLD,
+              ...(instruction ? { instruction } : {}),
+            };
+          },
+        );
+        instruction = await runner.run(
+          exchange.user,
+          exchange.activity,
+          exchange.reply,
+          controller.signal,
+        );
+      }
       // Let settled dispatch and reload continuations run before delivery.
       await new Promise<void>((resolve) => setTimeout(resolve, 0));
       if (stopped || controller.signal.aborted || !ctx.isIdle()) return;
