@@ -59,6 +59,7 @@
     "vitest": "^2.1.0"
   },
   "scripts": {
+    "prepare": "node .githooks/install.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "lint": "biome check src/ test/ bench/",
