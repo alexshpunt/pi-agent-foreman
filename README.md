@@ -160,9 +160,15 @@ Pressing Esc to abort a run never summons Foreman. A non-empty answer to a statu
 ```sh
 git clone https://github.com/alexshpunt/pi-agent-foreman.git
 cd pi-agent-foreman
-npm install
+npm ci
 npm test
 ```
+
+In a Git checkout, `npm ci` installs a pre-commit hook that uses the locked
+Biome version to format staged files under `src/`, `test/`, and `bench/`.
+If a file also has unstaged edits, the hook updates only the staged version.
+If you already manage your own hooks, add `node .githooks/format-staged.mjs`
+to your pre-commit hook; the installer does not replace it.
 
 ## License
 

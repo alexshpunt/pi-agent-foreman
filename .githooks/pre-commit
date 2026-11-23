@@ -1,0 +1,5 @@
+#!/bin/sh
+# Worktrees share this hook; older branches may not have the formatter.
+if [ -f .githooks/format-staged.mjs ]; then
+  exec node .githooks/format-staged.mjs
+fi
